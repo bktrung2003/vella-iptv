@@ -39,7 +39,7 @@ Frontend build **embed** URL API vào bundle.
 1. Repo → **Settings** → **Secrets and variables** → **Actions** → tab **Variables**
 2. **New repository variable**
    - Name: `VITE_API_URL`
-   - Value: URL mà trình duyệt gọi được tới backend, ví dụ `http://192.168.1.116:8000` (cùng host/IP với máy chạy Docker)
+   - Value: URL mà trình duyệt gọi được tới backend — **cổng publish mặc định trên host là 7000**, ví dụ `http://192.168.1.116:7000` (khớp `BACKEND_PUBLISH_PORT` trong env stack)
 
 Sau đó push lại `main` (hoặc chạy workflow **workflow_dispatch**) để image frontend được build đúng API URL.
 
@@ -65,16 +65,13 @@ Packages:
 ### 4 — Tạo stack trên Portainer
 
 1. **Stacks** → **Add stack** → tên ví dụ `vella-iptv`
-2. **Web editor**: dán nội dung [`platform/compose.portainer.ghcr.yml`](../platform/compose.portainer.ghcr.yml). File đã **nhúng sẵn** user/pass/SECRET_KEY/IP lab (`192.168.1.116`) — có thể **Deploy** luôn, không bắt buộc khai báo env trong Portainer.
-3. **Environment variables** (tuỳ chọn): chỉ cần nếu bạn muốn override; ví dụ `IMAGE_TAG=v1.0.0` để rollback. Đổi IP/CORS/secret: sửa trực tiếp trong compose (hoặc tách lại env như bản cũ).
-4. **Superuser đăng nhập dashboard lần đầu:** email `admin@vella-iptv.local`, mật khẩu = `FIRST_SUPERUSER_PASSWORD` trong file compose (đổi ngay sau khi vào được).
-5. **Deploy the stack**
+2. **Web editor**: dán [`platform/compose.portainer.ghcr.yml`](../platform/compose.portainer.ghcr.yml) (file trên Git **không** chứa mật khẩu — an toàn khi repo public).
+3. **Environment variables**: dán nội dung từ [`platform/compose.portainer.ghcr.env.example`](../platform/compose.portainer.ghcr.env.example), điền `SECRET_KEY`, `POSTGRES_PASSWORD`, `FIRST_SUPERUSER`, `FIRST_SUPERUSER_PASSWORD`, `SERVER_IP`, v.v. (có thể lưu bản riêng trên máy `compose.portainer.ghcr.env` — file này nằm trong `.gitignore`.)
+4. **Deploy the stack**
 
-> ⚠️ Compose có secret **đọc được trên GitHub** (repo public). Chỉ dùng lab; production → đổi toàn bộ và không commit mật khẩu thật.
+Truy cập (thay IP cho đúng; backend **host** mặc định cổng **7000**):
 
-Truy cập thử:
-
-- API docs: `http://192.168.1.116:8000/docs`
+- API docs: `http://192.168.1.116:7000/docs`
 - Dashboard: `http://192.168.1.116:5173`
 - Adminer: `http://192.168.1.116:8080`
 
@@ -109,8 +106,8 @@ Actions sẽ push image tag `v1.0.0` (và `latest` trên main theo cấu hình m
 | Actions không chạy | Kiểm tra file tại **root** `.github/workflows/build-push-ghcr.yml`, branch `main` |
 | Portainer pull 401 | Đăng ký registry GHCR + PAT `read:packages`, hoặc để package public |
 | Frontend gọi sai API | Chỉnh **variable** `VITE_API_URL` trên GitHub → chạy lại workflow → redeploy |
-| `prestart` exit 1 | Xem log container `prestart` trên Portainer. Thường gặp: thiếu **`PROJECT_NAME`** trong env backend (Settings Pydantic lỗi ngay khi import), hoặc **`SENTRY_DSN=""`** (chuỗi rỗng không hợp lệ với kiểu URL), hoặc Alembic / không kết nối được Postgres. |
-| **`db` unhealthy** | (1) Trong Portainer stack env phải có `POSTGRES_PASSWORD` (không để trống), nên có `POSTGRES_USER` / `POSTGRES_DB` hoặc để mặc định compose (`postgres` / `app`). (2) Xem log container `db`: lỗi quyền volume, mật khẩu, hoặc data cũ không khớp phiên bản Postgres. (3) Lần đầu init DB chậm — compose đã có `start_period: 90s`. (4) Đổi major image Postgres sau khi đã có volume → cần xóa volume `vella-iptv-db` (mất data) hoặc giữ đúng major cũ. |
+| `prestart` exit 1 | Xem log `prestart`. Thường gặp: thiếu **`SECRET_KEY`** / **`POSTGRES_PASSWORD`** trong env stack, hoặc Alembic / không kết nối Postgres. `PROJECT_NAME` có default trong compose; có thể override bằng env. |
+| **`db` unhealthy** | (1) `POSTGRES_PASSWORD` bắt buộc trong env stack. (2) `POSTGRES_USER` / `POSTGRES_DB` mặc định `vella` / `vella_iptv` nếu không set. (3) Log container `db` — volume / version Postgres. (4) `start_period: 90s` cho ổ chậm. |
 | CORS chặn | Mở rộng `BACKEND_CORS_ORIGINS` đúng scheme/host/port |
 
 ---
@@ -118,4 +115,5 @@ Actions sẽ push image tag `v1.0.0` (và `latest` trên main theo cấu hình m
 ## Liên quan
 
 - Traefik + HTTPS công khai: [`platform/deployment.md`](../platform/deployment.md) + `compose.traefik.yml`
-- Mẫu biến môi trường: [`platform/.env.example`](../platform/.env.example)
+- Portainer env mẫu: [`platform/compose.portainer.ghcr.env.example`](../platform/compose.portainer.ghcr.env.example)
+- Dev local: [`platform/.env.example`](../platform/.env.example)

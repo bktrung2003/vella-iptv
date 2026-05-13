@@ -1,6 +1,8 @@
 # Secrets — tạo từ file .env.example
 platform/.env
 platform/frontend/.env
+# Bản copy có secret cho Portainer (tự tạo từ compose.portainer.ghcr.env.example)
+platform/compose.portainer.ghcr.env
 
 # Python
 **/__pycache__/

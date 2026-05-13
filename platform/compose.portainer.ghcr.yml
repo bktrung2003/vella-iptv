@@ -1,39 +1,32 @@
-# Stack Portainer: kéo image từ GHCR (không build trên server).
+# Stack Portainer — template an toàn cho Git (KHÔNG chứa mật khẩu).
+# Bạn dán file này vào Web editor, rồi thêm biến trong Portainer → Stack → Environment variables
+# (hoặc copy từ compose.portainer.ghcr.env.example vào đó).
 #
-# Đổi IP / mật khẩu: sửa TRỰC TIẾP file này (không dùng platform/.env cho stack Portainer).
-# Sau khi đổi IP: đặt VITE_API_URL trên GitHub Actions Variables + re-run workflow — xem README.md mục "Chỉnh cho khớp".
+# Backend mặc định publish cổng HOST 7000 → container vẫn :8000 (tránh trùng app khác dùng 8000).
+# GitHub Variable VITE_API_URL phải khớp: http://<IP>:7000
 #
-# ⚠️ FILE NÀY CHỨA MẬT KHẨU MẶC ĐỊNH LAB — repo public → ai cũng thấy.
-#    Chỉ để chạy nhanh; đổi POSTGRES_*, SECRET_KEY, FIRST_SUPERUSER_* trước production.
-#
-# Trước khi deploy: workflow "Build and Push GHCR" đã push image (branch main).
-# Đổi IP 192.168.1.116 nếu server bạn khác; redeploy sau khi sửa.
-#
-# IMAGE_TAG: mặc định latest — có thể override trong Portainer env nếu cần.
+# IMAGE_TAG: latest hoặc v1.0.0
 
 version: "3.8"
 
-# Biến dùng chung backend + prestart (trùng DB)
 x-vella-backend-env: &vella_backend_env
-  DOMAIN: "192.168.1.116"
-  FRONTEND_HOST: "http://192.168.1.116:5173"
+  DOMAIN: ${SERVER_IP}
+  FRONTEND_HOST: "http://${SERVER_IP}:${FRONTEND_PUBLISH_PORT:-5173}"
   ENVIRONMENT: production
-  # Bắt buộc cho app.core.config.Settings (thiếu → prestart exit 1)
-  PROJECT_NAME: "Vella IPTV"
-  BACKEND_CORS_ORIGINS: "http://192.168.1.116:5173,http://192.168.1.116:8000,http://127.0.0.1:5173"
-  SECRET_KEY: "BrEE-rpDW3edm7kIK4zSv90TGie6Ub2_P3S8tGLzjK67ESBiFs4FmCybNPGgTDac"
-  FIRST_SUPERUSER: "admin@vella-iptv.local"
-  FIRST_SUPERUSER_PASSWORD: "Y1UKVoPaNVtg5vYm9PBTV9so"
-  SMTP_HOST: ""
-  SMTP_USER: ""
-  SMTP_PASSWORD: ""
-  EMAILS_FROM_EMAIL: "noreply@vella-iptv.local"
+  PROJECT_NAME: ${PROJECT_NAME:-Vella IPTV}
+  BACKEND_CORS_ORIGINS: "http://${SERVER_IP}:${FRONTEND_PUBLISH_PORT:-5173},http://${SERVER_IP}:${BACKEND_PUBLISH_PORT:-7000},http://127.0.0.1:${FRONTEND_PUBLISH_PORT:-5173}"
+  SECRET_KEY: ${SECRET_KEY}
+  FIRST_SUPERUSER: ${FIRST_SUPERUSER}
+  FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL:-noreply@example.com}
   POSTGRES_SERVER: db
-  POSTGRES_PORT: "5432"
-  POSTGRES_USER: vella
-  POSTGRES_DB: vella_iptv
-  POSTGRES_PASSWORD: "LZeGmkEZfNzsVOzSKapGF5eJIZ3nwL52"
-  # Không set SENTRY_DSN nếu không dùng — chuỗi rỗng làm lỗi kiểu HttpUrl
+  POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+  POSTGRES_USER: ${POSTGRES_USER:-vella}
+  POSTGRES_DB: ${POSTGRES_DB:-vella_iptv}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
 services:
   db:
@@ -49,9 +42,9 @@ services:
       - vella-iptv-db:/var/lib/postgresql/data/pgdata
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_USER: vella
-      POSTGRES_DB: vella_iptv
-      POSTGRES_PASSWORD: "LZeGmkEZfNzsVOzSKapGF5eJIZ3nwL52"
+      POSTGRES_USER: ${POSTGRES_USER:-vella}
+      POSTGRES_DB: ${POSTGRES_DB:-vella_iptv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
   prestart:
     image: ghcr.io/bktrung2003/vella-iptv-backend:${IMAGE_TAG:-latest}
@@ -72,7 +65,7 @@ services:
       prestart:
         condition: service_completed_successfully
     ports:
-      - "8000:8000"
+      - "${BACKEND_PUBLISH_PORT:-7000}:8000"
     environment:
       <<: *vella_backend_env
     healthcheck:
@@ -88,7 +81,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "5173:80"
+      - "${FRONTEND_PUBLISH_PORT:-5173}:80"
 
   adminer:
     image: adminer
@@ -96,7 +89,7 @@ services:
     depends_on:
       - db
     ports:
-      - "8080:8080"
+      - "${ADMINER_PUBLISH_PORT:-8080}:8080"
     environment:
       ADMINER_DESIGN: pepa-linha-dark
 

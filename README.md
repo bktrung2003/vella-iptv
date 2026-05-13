@@ -2,7 +2,7 @@
 
 Control plane (FastAPI + dashboard) và tài nguyên UI/research cho IPTV khách sạn.
 
-- **`platform/`** — [full-stack-fastapi-template](https://github.com/fastapi/full-stack-fastapi-template) (backend, frontend, Docker Compose).
+- **`platform/`** — [full-stack-fastapi-template](https://github.com/fastapi/full-stack-fastapi-template) (backend, React, Docker Compose).
 - **`scripts/`** — batch Windows: `platform-start.bat` / `platform-stop.bat` (cần Docker local).
 - **`ui/`** — prototype giao diện TV.
 
@@ -10,30 +10,26 @@ Control plane (FastAPI + dashboard) và tài nguyên UI/research cho IPTV khách
 
 <https://github.com/bktrung2003/vella-iptv>
 
-## Chỉnh cho khớp — chỉ **một chỗ** tùy cách bạn chạy
+## Chỉnh cho khớp — từng luồng
 
-Đừng trộn `.env` với Portainer: **mỗi luồng có file riêng**, không tự “khớp” với nhau.
+| Bạn đang làm gì | Sửa **ở đâu** | Ghi chú |
+|-----------------|---------------|---------|
+| **Portainer** | ① Dán [`platform/compose.portainer.ghcr.yml`](platform/compose.portainer.ghcr.yml) vào stack. ② Thêm biến môi trường (mẫu [`platform/compose.portainer.ghcr.env.example`](platform/compose.portainer.ghcr.env.example)). | File compose trên Git **không** chứa mật khẩu. Có thể lưu bản riêng `platform/compose.portainer.ghcr.env` (đã `.gitignore`) để copy nhanh. |
+| **GitHub Actions** (build frontend) | **Variables** → `VITE_API_URL` | Phải trùng URL API ngoài (mặc định stack dùng cổng host **7000**): `http://<IP>:7000` → **Re-run workflow** → Portainer **Pull and redeploy**. |
+| **Máy dev có Docker** | [`platform/.env.example`](platform/.env.example) → `platform/.env` | Không dùng cho Portainer. |
 
-| Bạn đang làm gì | Sửa **ở đâu** | Việc cần nhớ |
-|-----------------|---------------|--------------|
-| **Portainer** (dán stack, kéo image GHCR) | Chỉ [`platform/compose.portainer.ghcr.yml`](platform/compose.portainer.ghcr.yml) | IP (`DOMAIN`, `FRONTEND_HOST`, `BACKEND_CORS_ORIGINS`), user/pass DB, superuser, `SECRET_KEY` đều nằm trong file này. **Không** cần `platform/.env` cho stack đó. |
-| **GitHub Actions** (build image frontend) | Repo → **Settings → Secrets and variables → Actions → Variables** → `VITE_API_URL` | Phải **cùng host:port** với API thật (vd máy bạn là `http://192.168.1.116:8000`). Đổi IP trong compose → **đổi luôn** biến này → **Re-run workflow** → Portainer **Pull and redeploy**. |
-| **Máy dev có Docker** (`docker compose` trong `platform/`) | `platform/.env` (+ tuỳ chọn `platform/frontend/.env`) | Copy từ [`platform/.env.example`](platform/.env.example). Không dùng cho stack Portainer hiện tại. |
+**Đổi IP server (ví dụ `192.168.1.50`):** trong Portainer đặt `SERVER_IP=192.168.1.50`, chỉnh `VITE_API_URL=http://192.168.1.50:7000` trên GitHub → build lại → redeploy.
 
-**Thứ tự cho khớp IP (ví dụ đổi sang `192.168.1.50`):**
-
-1. Sửa IP trong `compose.portainer.ghcr.yml` (khối `x-vella-backend-env`: `DOMAIN`, `FRONTEND_HOST`, `BACKEND_CORS_ORIGINS`).
-2. Trên GitHub đặt `VITE_API_URL=http://192.168.1.50:8000` → Actions → chạy lại **Build and Push GHCR**.
-3. Portainer → stack → **Pull and redeploy**.
+**Đổi cổng backend trên host:** `BACKEND_PUBLISH_PORT` (mặc định **7000**; container vẫn listen `8000` bên trong).
 
 ## CI → GHCR → Portainer (tóm tắt)
 
-1. Push `main` → workflow [`.github/workflows/build-push-ghcr.yml`](.github/workflows/build-push-ghcr.yml) build & push image.
-2. `VITE_API_URL` trên GitHub (bước trên bảng).
-3. Portainer: dán [`platform/compose.portainer.ghcr.yml`](platform/compose.portainer.ghcr.yml) → Deploy / **Pull and redeploy**.
+1. Push `main` → [`.github/workflows/build-push-ghcr.yml`](.github/workflows/build-push-ghcr.yml).
+2. `VITE_API_URL` = `http://<IP>:<BACKEND_PUBLISH_PORT>` (thường port **7000**).
+3. Portainer: compose + env → Deploy / **Pull and redeploy**.
 
 Chi tiết: [docs/deploy-portainer.md](docs/deploy-portainer.md).
 
-### Traefik + HTTPS (tùy chọn, production public)
+### Traefik + HTTPS (tùy chọn)
 
-Tạo mạng `traefik-public`, xem [platform/deployment.md](platform/deployment.md) và `compose.traefik.yml`.
+[platform/deployment.md](platform/deployment.md) và `compose.traefik.yml`.
