@@ -128,6 +128,7 @@ Actions sẽ push image tag `v1.0.0` (và `latest` trên main theo cấu hình m
 | Portainer pull 401 | Đăng ký registry GHCR + PAT `read:packages`, hoặc để package public |
 | Frontend gọi sai API | Chỉnh **variable** `VITE_API_URL` trên GitHub → chạy lại workflow → redeploy |
 | `prestart` exit lỗi | Xem log container `prestart` (Alembic / DB connection) |
+| **`db` unhealthy** | (1) Trong Portainer stack env phải có `POSTGRES_PASSWORD` (không để trống), nên có `POSTGRES_USER` / `POSTGRES_DB` hoặc để mặc định compose (`postgres` / `app`). (2) Xem log container `db`: lỗi quyền volume, mật khẩu, hoặc data cũ không khớp phiên bản Postgres. (3) Lần đầu init DB chậm — compose đã có `start_period: 90s`. (4) Đổi major image Postgres sau khi đã có volume → cần xóa volume `vella-iptv-db` (mất data) hoặc giữ đúng major cũ. |
 | CORS chặn | Mở rộng `BACKEND_CORS_ORIGINS` đúng scheme/host/port |
 
 ---
