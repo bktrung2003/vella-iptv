@@ -18,6 +18,8 @@ x-vella-backend-env: &vella_backend_env
   DOMAIN: "192.168.1.116"
   FRONTEND_HOST: "http://192.168.1.116:5173"
   ENVIRONMENT: production
+  # Bắt buộc cho app.core.config.Settings (thiếu → prestart exit 1)
+  PROJECT_NAME: "Vella IPTV"
   BACKEND_CORS_ORIGINS: "http://192.168.1.116:5173,http://192.168.1.116:8000,http://127.0.0.1:5173"
   SECRET_KEY: "BrEE-rpDW3edm7kIK4zSv90TGie6Ub2_P3S8tGLzjK67ESBiFs4FmCybNPGgTDac"
   FIRST_SUPERUSER: "admin@vella-iptv.local"
@@ -31,7 +33,7 @@ x-vella-backend-env: &vella_backend_env
   POSTGRES_USER: vella
   POSTGRES_DB: vella_iptv
   POSTGRES_PASSWORD: "LZeGmkEZfNzsVOzSKapGF5eJIZ3nwL52"
-  SENTRY_DSN: ""
+  # Không set SENTRY_DSN nếu không dùng — chuỗi rỗng làm lỗi kiểu HttpUrl
 
 services:
   db:
@@ -73,7 +75,6 @@ services:
       - "8000:8000"
     environment:
       <<: *vella_backend_env
-      IPTV_GATEWAY_HLS_BASE_URL: ""
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
       interval: 15s
