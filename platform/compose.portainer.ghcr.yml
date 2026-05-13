@@ -1,16 +1,39 @@
 # Stack Portainer: kéo image từ GHCR (không build trên server).
-# Trước khi deploy: chạy workflow "Build and Push GHCR" trên GitHub (push main hoặc tag v*).
 #
-# Biến môi trường trong Portainer (stack env) — bắt buộc xem docs/deploy-portainer.md
-# IMAGE_TAG: thường để latest; rollback thì đổi v1.2.3 rồi Update stack.
+# ⚠️ FILE NÀY CHỨA MẬT KHẨU MẶC ĐỊNH LAB — repo public → ai cũng thấy.
+#    Chỉ để chạy nhanh; đổi POSTGRES_*, SECRET_KEY, FIRST_SUPERUSER_* trước production.
+#
+# Trước khi deploy: workflow "Build and Push GHCR" đã push image (branch main).
+# Đổi IP 192.168.1.116 nếu server bạn khác; redeploy sau khi sửa.
+#
+# IMAGE_TAG: mặc định latest — có thể override trong Portainer env nếu cần.
 
 version: "3.8"
+
+# Biến dùng chung backend + prestart (trùng DB)
+x-vella-backend-env: &vella_backend_env
+  DOMAIN: "192.168.1.116"
+  FRONTEND_HOST: "http://192.168.1.116:5173"
+  ENVIRONMENT: production
+  BACKEND_CORS_ORIGINS: "http://192.168.1.116:5173,http://192.168.1.116:8000,http://127.0.0.1:5173"
+  SECRET_KEY: "BrEE-rpDW3edm7kIK4zSv90TGie6Ub2_P3S8tGLzjK67ESBiFs4FmCybNPGgTDac"
+  FIRST_SUPERUSER: "admin@vella-iptv.local"
+  FIRST_SUPERUSER_PASSWORD: "Y1UKVoPaNVtg5vYm9PBTV9so"
+  SMTP_HOST: ""
+  SMTP_USER: ""
+  SMTP_PASSWORD: ""
+  EMAILS_FROM_EMAIL: "noreply@vella-iptv.local"
+  POSTGRES_SERVER: db
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: vella
+  POSTGRES_DB: vella_iptv
+  POSTGRES_PASSWORD: "LZeGmkEZfNzsVOzSKapGF5eJIZ3nwL52"
+  SENTRY_DSN: ""
 
 services:
   db:
     image: postgres:18
     restart: unless-stopped
-    # Dùng $$ để shell TRONG container đọc POSTGRES_* (tránh compose thay ${} sai khi env Portainer thiếu).
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 10s
@@ -21,9 +44,9 @@ services:
       - vella-iptv-db:/var/lib/postgresql/data/pgdata
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: vella
+      POSTGRES_DB: vella_iptv
+      POSTGRES_PASSWORD: "LZeGmkEZfNzsVOzSKapGF5eJIZ3nwL52"
 
   prestart:
     image: ghcr.io/bktrung2003/vella-iptv-backend:${IMAGE_TAG:-latest}
@@ -33,23 +56,7 @@ services:
         condition: service_healthy
     command: bash scripts/prestart.sh
     environment:
-      DOMAIN: ${DOMAIN}
-      FRONTEND_HOST: ${FRONTEND_HOST}
-      ENVIRONMENT: ${ENVIRONMENT}
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS}
-      SECRET_KEY: ${SECRET_KEY}
-      FIRST_SUPERUSER: ${FIRST_SUPERUSER}
-      FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL:-}
-      POSTGRES_SERVER: db
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      SENTRY_DSN: ${SENTRY_DSN:-}
+      <<: *vella_backend_env
 
   backend:
     image: ghcr.io/bktrung2003/vella-iptv-backend:${IMAGE_TAG:-latest}
@@ -60,26 +67,10 @@ services:
       prestart:
         condition: service_completed_successfully
     ports:
-      - "${BACKEND_PUBLISH_PORT:-8000}:8000"
+      - "8000:8000"
     environment:
-      DOMAIN: ${DOMAIN}
-      FRONTEND_HOST: ${FRONTEND_HOST}
-      ENVIRONMENT: ${ENVIRONMENT}
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS}
-      SECRET_KEY: ${SECRET_KEY}
-      FIRST_SUPERUSER: ${FIRST_SUPERUSER}
-      FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL:-}
-      POSTGRES_SERVER: db
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      SENTRY_DSN: ${SENTRY_DSN:-}
-      IPTV_GATEWAY_HLS_BASE_URL: ${IPTV_GATEWAY_HLS_BASE_URL:-}
+      <<: *vella_backend_env
+      IPTV_GATEWAY_HLS_BASE_URL: ""
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
       interval: 15s
@@ -93,7 +84,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "${FRONTEND_PUBLISH_PORT:-5173}:80"
+      - "5173:80"
 
   adminer:
     image: adminer
@@ -101,7 +92,7 @@ services:
     depends_on:
       - db
     ports:
-      - "${ADMINER_PUBLISH_PORT:-8080}:8080"
+      - "8080:8080"
     environment:
       ADMINER_DESIGN: pepa-linha-dark
 

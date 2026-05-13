@@ -65,30 +65,12 @@ Packages:
 ### 4 — Tạo stack trên Portainer
 
 1. **Stacks** → **Add stack** → tên ví dụ `vella-iptv`
-2. **Web editor**: dán nội dung file [`platform/compose.portainer.ghcr.yml`](../platform/compose.portainer.ghcr.yml) (copy từ repo sau khi pull).
-3. **Environment variables** (bổ sung / chỉnh — không commit secret lên Git):
+2. **Web editor**: dán nội dung [`platform/compose.portainer.ghcr.yml`](../platform/compose.portainer.ghcr.yml). File đã **nhúng sẵn** user/pass/SECRET_KEY/IP lab (`192.168.1.116`) — có thể **Deploy** luôn, không bắt buộc khai báo env trong Portainer.
+3. **Environment variables** (tuỳ chọn): chỉ cần nếu bạn muốn override; ví dụ `IMAGE_TAG=v1.0.0` để rollback. Đổi IP/CORS/secret: sửa trực tiếp trong compose (hoặc tách lại env như bản cũ).
+4. **Superuser đăng nhập dashboard lần đầu:** email `admin@vella-iptv.local`, mật khẩu = `FIRST_SUPERUSER_PASSWORD` trong file compose (đổi ngay sau khi vào được).
+5. **Deploy the stack**
 
-| Biến | Gợi ý |
-|------|--------|
-| `IMAGE_TAG` | `latest` (bình thường); rollback: `v1.0.1` |
-| `DOMAIN` | Hostname hoặc IP dùng trong CORS/email, ví dụ `192.168.1.116` |
-| `ENVIRONMENT` | `production` |
-| `PROJECT_NAME` | `Vella IPTV` |
-| `STACK_NAME` | `vella-iptv` |
-| `SECRET_KEY` | Sinh: `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
-| `POSTGRES_PASSWORD` | Mật khẩu mạnh |
-| `POSTGRES_USER` | `postgres` |
-| `POSTGRES_DB` | `app` |
-| `FIRST_SUPERUSER` | Email admin |
-| `FIRST_SUPERUSER_PASSWORD` | Mật khẩu mạnh |
-| `FRONTEND_HOST` | `http://192.168.1.116:5173` (khớp port publish) |
-| `BACKEND_CORS_ORIGINS` | Gồm `http://192.168.1.116:5173` và các origin TV kiosk nếu có |
-| `BACKEND_PUBLISH_PORT` | `8000` |
-| `FRONTEND_PUBLISH_PORT` | `5173` |
-| `ADMINER_PUBLISH_PORT` | `8080` |
-| `IPTV_GATEWAY_HLS_BASE_URL` | (tuỳ chọn) URL gateway HLS nội bộ |
-
-4. **Deploy the stack**
+> ⚠️ Compose có secret **đọc được trên GitHub** (repo public). Chỉ dùng lab; production → đổi toàn bộ và không commit mật khẩu thật.
 
 Truy cập thử:
 
