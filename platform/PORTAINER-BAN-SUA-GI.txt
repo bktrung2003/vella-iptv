@@ -1,0 +1,46 @@
+================================================================================
+PORTAINER — BẠN CHỈ LÀM ĐÚNG 2 CHỖ (đọc từ trên xuống)
+================================================================================
+
+(1) Web editor của Stack
+    → Dán NGUYÊN FILE compose (không sửa nếu chưa rành):
+    https://raw.githubusercontent.com/bktrung2003/vella-iptv/main/platform/compose.portainer.ghcr.yml
+
+(2) Environment variables (ô bên dưới hoặc tab Env của stack)
+    → Copy nội dung file: compose.portainer.ghcr.env.example
+    → Rồi SỬA ĐÚNG CÁC DÒNG sau (còn lại giữ mặc định được):
+
+    BẮT BUỘC (để trống hoặc sai là stack lỗi):
+    • SERVER_IP              = IP máy chạy Docker (ví dụ 192.168.1.116)
+    • SECRET_KEY             = mở CMD/PowerShell chạy:
+                               python -c "import secrets; print(secrets.token_urlsafe(32))"
+                               dán kết quả vào
+    • POSTGRES_PASSWORD      = mật khẩu database (tự đặt, nhớ để đăng Adminer)
+    • FIRST_SUPERUSER_PASSWORD = mật khẩu đăng nhập web dashboard
+
+    NÊN SỬA:
+    • FIRST_SUPERUSER        = email đăng nhập admin (ví dụ admin@khachsan.local)
+
+    CHỈ SỬA KHI BỊ TRÙNG CỔNG VỚI APP KHÁC:
+    • BACKEND_PUBLISH_PORT   = mặc định 7000 (API ra ngoài là http://IP:7000)
+    • FRONTEND_PUBLISH_PORT  = mặc định 5173
+    • ADMINER_PUBLISH_PORT   = mặc định 8080
+
+================================================================================
+SAU KHI ĐỔI CỔNG BACKEND (ví dụ không dùng 7000 nữa)
+================================================================================
+Trên GitHub repo → Settings → Variables → VITE_API_URL
+Đặt đúng: http://<SERVER_IP>:<BACKEND_PUBLISH_PORT>
+Ví dụ: http://192.168.1.116:7000
+
+Rồi: Actions → workflow "Build and Push GHCR" → Re-run workflow
+Portainer: stack → Pull and redeploy
+
+================================================================================
+VÀO WEB SAU KHI CHẠY XONG
+================================================================================
+• Dashboard:  http://<SERVER_IP>:5173        (đổi 5173 nếu bạn đổi FRONTEND_PUBLISH_PORT)
+• API docs:   http://<SERVER_IP>:7000/docs   (đổi 7000 nếu bạn đổi BACKEND_PUBLISH_PORT)
+• Adminer:    http://<SERVER_IP>:8080
+
+Đăng nhập dashboard = FIRST_SUPERUSER / FIRST_SUPERUSER_PASSWORD

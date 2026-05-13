@@ -1,11 +1,8 @@
-# Stack Portainer — template an toàn cho Git (KHÔNG chứa mật khẩu).
-# Bạn dán file này vào Web editor, rồi thêm biến trong Portainer → Stack → Environment variables
-# (hoặc copy từ compose.portainer.ghcr.env.example vào đó).
+# >>> Dán NGUYÊN file này vào Portainer → Stack → Web editor. KHÔNG sửa compose nếu chưa rành.
+# >>> Việc sửa IP / mật khẩu / cổng: làm ở Environment variables — xem PORTAINER-BAN-SUA-GI.txt
+#     và copy mẫu từ compose.portainer.ghcr.env.example
 #
-# Backend mặc định publish cổng HOST 7000 → container vẫn :8000 (tránh trùng app khác dùng 8000).
-# GitHub Variable VITE_API_URL phải khớp: http://<IP>:7000
-#
-# IMAGE_TAG: latest hoặc v1.0.0
+# Backend ra ngoài mặc định cổng HOST 7000. GitHub Variable VITE_API_URL = http://<IP>:7000
 
 version: "3.8"
 

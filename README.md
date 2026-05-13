@@ -14,7 +14,7 @@ Control plane (FastAPI + dashboard) và tài nguyên UI/research cho IPTV khách
 
 | Bạn đang làm gì | Sửa **ở đâu** | Ghi chú |
 |-----------------|---------------|---------|
-| **Portainer** | ① Dán [`platform/compose.portainer.ghcr.yml`](platform/compose.portainer.ghcr.yml) vào stack. ② Thêm biến môi trường (mẫu [`platform/compose.portainer.ghcr.env.example`](platform/compose.portainer.ghcr.env.example)). | File compose trên Git **không** chứa mật khẩu. Có thể lưu bản riêng `platform/compose.portainer.ghcr.env` (đã `.gitignore`) để copy nhanh. |
+| **Portainer** | Đọc **[`platform/PORTAINER-BAN-SUA-GI.txt`](platform/PORTAINER-BAN-SUA-GI.txt)** (chỉ rõ dán file nào, dòng nào bắt buộc sửa). Compose: [`compose.portainer.ghcr.yml`](platform/compose.portainer.ghcr.yml). Env mẫu: [`compose.portainer.ghcr.env.example`](platform/compose.portainer.ghcr.env.example). | |
 | **GitHub Actions** (build frontend) | **Variables** → `VITE_API_URL` | Phải trùng URL API ngoài (mặc định stack dùng cổng host **7000**): `http://<IP>:7000` → **Re-run workflow** → Portainer **Pull and redeploy**. |
 | **Máy dev có Docker** | [`platform/.env.example`](platform/.env.example) → `platform/.env` | Không dùng cho Portainer. |
 
