@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kịch bản cốt lõi - Hotel IPTV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; 
+            color: #f8fafc;
+        }
+
+        /* Animations for data flow */
+        @keyframes flow-stream {
+            from { stroke-dashoffset: 40; }
+            to { stroke-dashoffset: 0; }
+        }
+        
+        /* Data Particle Animation */
+        @keyframes move-particle {
+            0% { offset-distance: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { offset-distance: 100%; opacity: 0; }
+        }
+
+        .path-stream {
+            stroke-dasharray: 10 10;
+            animation: flow-stream 1s linear infinite;
+        }
+
+        .particle {
+            fill: #fbbf24;
+            r: 4;
+            filter: blur(1px);
+            opacity: 0;
+        }
+
+        .particle-active {
+            animation: move-particle 2.5s linear infinite;
+        }
+        
+        /* Fast animation for short paths */
+        .particle-active-fast {
+            animation: move-particle 1.5s linear infinite;
+        }
+
+        /* Smooth transitions */
+        .node, .flow-line {
+            transition: all 0.5s ease-in-out;
+        }
+
+        .info-scroll::-webkit-scrollbar { width: 6px; }
+        .info-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .info-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col items-center justify-center">
+
+    <div class="max-w-6xl w-full bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+        
+        <!-- Header & Controls -->
+        <div class="p-6 border-b border-slate-700 bg-slate-800/50">
+            <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent mb-4">
+                Luồng dữ liệu IPTV (Đa kênh & Định tuyến)
+            </h2>
+            <div class="flex flex-wrap gap-2" id="btn-container"></div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-0">
+            
+            <!-- SVG Diagram -->
+            <div class="lg:col-span-2 p-6 bg-slate-900 flex items-center justify-center relative overflow-hidden" style="min-height: 550px;">
+                <svg id="main-svg" viewBox="0 0 800 500" class="w-full h-full max-w-full drop-shadow-lg">
+                    <defs>
+                        <marker id="arrow-stream" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                        </marker>
+                        
+                        <linearGradient id="grad-video" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#2563eb" />
+                            <stop offset="100%" stop-color="#3b82f6" />
+                        </linearGradient>
+                        <linearGradient id="grad-server" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#059669" />
+                            <stop offset="100%" stop-color="#10b981" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- ================= PATHS (LINES) ================= -->
+                    <!-- Path IDs mapping to particles -->
+                    <path id="path-headend-sw" d="M 180 150 L 320 250" fill="none" stroke="#3b82f6" stroke-width="4" stroke-dasharray="8 8" class="flow-line opacity-20" />
+                    
+                    <path id="path-sw-tv101" d="M 480 250 C 550 250, 600 150, 650 150" fill="none" stroke="#3b82f6" stroke-width="3" stroke-dasharray="6 6" class="flow-line opacity-20" />
+                    <path id="path-sw-tv102" d="M 480 250 L 650 250" fill="none" stroke="#3b82f6" stroke-width="3" stroke-dasharray="6 6" class="flow-line opacity-20" />
+                    <path id="path-sw-tv103" d="M 480 250 C 550 250, 600 350, 650 350" fill="none" stroke="#3b82f6" stroke-width="3" stroke-dasharray="6 6" class="flow-line opacity-20" />
+
+                    <!-- API Paths (Bi-directional) -->
+                    <path id="path-pms-backend" d="M 180 355 L 320 400" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 4" class="flow-line opacity-20" />
+                    <path id="path-backend-pms" d="M 320 420 L 180 375" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 4" class="flow-line opacity-20" />
+
+                    <path id="path-tv-sw" d="M 650 160 C 600 160, 550 260, 480 260" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" class="flow-line opacity-20" />
+                    <path id="path-sw-backend" d="M 400 280 L 400 380" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" class="flow-line opacity-20" />
+                    <path id="path-backend-sw" d="M 420 380 L 420 280" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" class="flow-line opacity-20" />
+                    <path id="path-sw-tv" d="M 480 240 C 550 240, 600 140, 650 140" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" class="flow-line opacity-20" />
+
+                    <!-- ================= PARTICLES ================= -->
+                    <circle id="p1" class="particle" style="offset-path: path('M 180 150 L 320 250');" />
+                    <circle id="p2" class="particle" style="offset-path: path('M 180 355 L 320 400');" />
+                    <circle id="p3" class="particle" style="offset-path: path('M 320 420 L 180 375');" />
+                    <circle id="p4" class="particle" style="offset-path: path('M 650 160 C 600 160, 550 260, 480 260');" />
+                    <circle id="p5" class="particle" style="offset-path: path('M 400 280 L 400 380');" />
+                    <circle id="p6" class="particle" style="offset-path: path('M 420 380 L 420 280');" />
+                    <circle id="p7" class="particle" style="offset-path: path('M 480 240 C 550 240, 600 140, 650 140');" />
+                    <circle id="p-video" class="particle" fill="#3b82f6" r="6" style="offset-path: path('M 480 250 C 550 250, 600 150, 650 150');" />
+
+                    <!-- Multi-channel Particles (Headend to TV complete paths) -->
+                    <!-- Kênh VTV1 (Đỏ) -> TV101 -->
+                    <circle id="p-vid-red" class="particle" fill="#ef4444" r="6" style="offset-path: path('M 180 150 L 320 250 L 480 250 C 550 250, 600 150, 650 150');" />
+                    <!-- Kênh HBO (Xanh) -> TV102 -->
+                    <circle id="p-vid-blue" class="particle" fill="#3b82f6" r="6" style="offset-path: path('M 180 150 L 320 250 L 480 250 L 650 250');" />
+                    <!-- Kênh CNN (Tím) -> TV103 -->
+                    <circle id="p-vid-purple" class="particle" fill="#a855f7" r="6" style="offset-path: path('M 180 150 L 320 250 L 480 250 C 550 250, 600 350, 650 350');" />
+
+
+                    <!-- ================= NODES ================= -->
+
+                    <g id="node-headend" class="node" transform="translate(40, 110)">
+                        <rect width="140" height="80" rx="12" fill="url(#grad-video)" />
+                        <text x="70" y="45" fill="white" font-weight="bold" text-anchor="middle" font-size="14">Headend</text>
+                    </g>
+
+                    <g id="node-switch" class="node" transform="translate(320, 210)">
+                        <rect width="160" height="80" rx="12" fill="#334155" />
+                        <text x="80" y="45" fill="white" font-weight="bold" text-anchor="middle" font-size="14">Network Switch</text>
+                        <!-- Biểu tượng Router nhỏ bên trong switch để thể hiện tính năng định tuyến -->
+                        <path d="M 70 60 L 90 60 M 80 50 L 80 70 M 75 55 L 85 65 M 75 65 L 85 55" stroke="#94a3b8" stroke-width="2"/>
+                    </g>
+
+                    <g id="node-backend" class="node" transform="translate(320, 380)">
+                        <rect width="160" height="80" rx="12" fill="url(#grad-server)" />
+                        <text x="80" y="45" fill="white" font-weight="bold" text-anchor="middle" font-size="14">Middleware</text>
+                    </g>
+
+                    <g id="node-pms" class="node" transform="translate(40, 330)">
+                        <rect width="140" height="80" rx="12" fill="#78350f" />
+                        <text x="70" y="45" fill="white" font-weight="bold" text-anchor="middle" font-size="14">Opera PMS</text>
+                    </g>
+
+                    <g id="node-tvs" class="node" transform="translate(650, 110)">
+                        <!-- TV 101 -->
+                        <g id="tv-101" transform="translate(0,0)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" />
+                            <text x="55" y="28" fill="white" font-size="12" font-weight="bold" text-anchor="middle">Room 101</text>
+                            <text id="txt-tv1" x="55" y="48" fill="#fca5a5" font-size="11" text-anchor="middle">VTV1 (Kênh Đỏ)</text>
+                        </g>
+                        <!-- TV 102 -->
+                        <g id="tv-102" transform="translate(0,100)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" />
+                            <text x="55" y="28" fill="white" font-size="12" font-weight="bold" text-anchor="middle">Room 102</text>
+                            <text id="txt-tv2" x="55" y="48" fill="#93c5fd" font-size="11" text-anchor="middle">HBO (Kênh Xanh)</text>
+                        </g>
+                        <!-- TV 103 -->
+                        <g id="tv-103" transform="translate(0,200)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" />
+                            <text x="55" y="28" fill="white" font-size="12" font-weight="bold" text-anchor="middle">Room 103</text>
+                            <text id="txt-tv3" x="55" y="48" fill="#d8b4fe" font-size="11" text-anchor="middle">CNN (Kênh Tím)</text>
+                        </g>
+                    </g>
+                </svg>
+
+                <div class="absolute top-4 right-4 bg-slate-900/80 p-3 rounded-lg border border-slate-700 backdrop-blur-md text-[11px] text-slate-300 shadow-xl">
+                    <div class="font-bold mb-2 text-white border-b border-slate-600 pb-1">Chú giải Hạt Dữ liệu:</div>
+                    <div class="flex items-center gap-2 mb-1"><div class="w-3 h-3 rounded-full bg-amber-400 blur-[1px]"></div> Request/API (Rất nhẹ)</div>
+                    <div class="flex items-center gap-2 mb-1"><div class="w-3 h-3 rounded-full bg-red-500 blur-[1px]"></div> Video Stream (Kênh 1)</div>
+                    <div class="flex items-center gap-2 mb-1"><div class="w-3 h-3 rounded-full bg-blue-500 blur-[1px]"></div> Video Stream (Kênh 2)</div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-purple-500 blur-[1px]"></div> Video Stream (Kênh 3)</div>
+                </div>
+            </div>
+
+            <!-- Description Sidebar -->
+            <div class="p-6 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Dòng chảy dữ liệu
+                </h3>
+                <div id="info-content" class="flex-1 overflow-y-auto info-scroll pr-2 space-y-4 text-sm text-slate-300"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const steps = [
+    {
+        title: "Kịch bản 1: Check-in",
+        shortTitle: "1. Check-in",
+        activeNodes: ['node-pms', 'node-backend', 'node-switch', 'node-tvs'],
+        activePaths: ['path-pms-backend', 'path-backend-sw', 'path-sw-tv'],
+        particles: [
+            { id: 'p2', delay: '0s', class: 'particle-active-fast' }, 
+            { id: 'p6', delay: '0.6s', class: 'particle-active-fast' }, 
+            { id: 'p7', delay: '1.0s', class: 'particle-active-fast' }  
+        ],
+        tvText: ["Đang chờ khởi động...", "Đang chờ khởi động...", "Đang chờ khởi động..."],
+        html: `
+            <div class="space-y-3">
+                <p><span class="text-amber-400">●</span> <strong>Hạt xuất phát từ PMS:</strong> Lễ tân thao tác, lệnh check-in bay sang Middleware.</p>
+                <p><span class="text-amber-400">●</span> <strong>Xử lý tại Middleware:</strong> Ghi nhận phòng đã có khách, chuẩn bị lời chào.</p>
+                <p><span class="text-amber-400">●</span> <strong>Hạt bay tới TV:</strong> Middleware gửi cấu hình ban đầu, TV sẵn sàng phục vụ khách.</p>
+            </div>
+        `
+    },
+    {
+        title: "Kịch bản 2: Xem TV",
+        shortTitle: "2. Xem Live TV",
+        activeNodes: ['node-headend', 'node-switch', 'node-tvs'],
+        activePaths: ['path-headend-sw', 'path-sw-tv101'],
+        particles: [
+            { id: 'p1', delay: '0s', class: 'particle-active' },      
+            { id: 'p-video', delay: '0.5s', class: 'particle-active' } 
+        ],
+        tvText: ["VTV1 (Kênh Đỏ)", "Đang Menu Chính", "Đang Menu Chính"],
+        html: `
+            <div class="space-y-3">
+                <p><span class="text-blue-400">●</span> <strong>Luồng Video (Multicast):</strong> Dữ liệu video từ Headend luôn đẩy sẵn tới Switch Lõi.</p>
+                <p><span class="text-blue-500 text-lg">●</span> <strong>Hạt lớn (Băng thông):</strong> Khi phòng 101 chọn kênh, Switch "mở cổng" cho luồng video chảy thẳng vào TV 101.</p>
+            </div>
+        `
+    },
+    {
+        title: "Kịch bản 3: Xem Bill",
+        shortTitle: "3. Tra cứu Bill",
+        activeNodes: ['node-tvs', 'node-switch', 'node-backend', 'node-pms'],
+        activePaths: ['path-tv-sw', 'path-sw-backend', 'path-backend-pms', 'path-pms-backend', 'path-backend-sw', 'path-sw-tv'],
+        particles: [
+            { id: 'p4', delay: '0s', class: 'particle-active-fast' },   
+            { id: 'p5', delay: '0.4s', class: 'particle-active-fast' }, 
+            { id: 'p3', delay: '0.8s', class: 'particle-active-fast' }, 
+            { id: 'p2', delay: '1.4s', class: 'particle-active-fast' }, 
+            { id: 'p6', delay: '1.8s', class: 'particle-active-fast' }, 
+            { id: 'p7', delay: '2.2s', class: 'particle-active-fast' }  
+        ],
+        tvText: ["Đang xem Bill", "Đang xem Bill", "Đang xem Bill"],
+        html: `
+            <div class="space-y-3">
+                <p><strong>Vòng lặp Request-Response:</strong></p>
+                <p>1. Hạt từ <strong>TV</strong> đi tìm <strong>Middleware</strong> để hỏi tiền phòng.</p>
+                <p>2. Middleware lại "bắn" hạt sang <strong>PMS</strong> để xin số liệu.</p>
+                <p>3. <strong>PMS</strong> trả hạt chứa tiền về Middleware.</p>
+                <p>4. Middleware trang trí lại và gửi hạt cuối cùng về <strong>TV</strong>.</p>
+            </div>
+        `
+    },
+    {
+        title: "Kịch bản 4: Nhiều TV xem nhiều kênh",
+        shortTitle: "4. Đa Kênh (Multi-channel)",
+        activeNodes: ['node-headend', 'node-switch', 'node-tvs'],
+        activePaths: ['path-headend-sw', 'path-sw-tv101', 'path-sw-tv102', 'path-sw-tv103'],
+        particles: [
+            { id: 'p-vid-red', delay: '0s', class: 'particle-active' },    // Kênh Đỏ
+            { id: 'p-vid-blue', delay: '0.6s', class: 'particle-active' },   // Kênh Xanh
+            { id: 'p-vid-purple', delay: '1.2s', class: 'particle-active' }  // Kênh Tím
+        ],
+        tvText: ["VTV1 (Đỏ)", "HBO (Xanh)", "CNN (Tím)"],
+        html: `
+            <div class="p-4 bg-purple-900/30 border border-purple-800/50 rounded-lg shadow-inner">
+                <strong class="block text-purple-400 text-base mb-3">Sự kỳ diệu của IGMP Snooping (Multicast)</strong>
+                <ol class="list-decimal pl-5 space-y-3 text-slate-300">
+                    <li><strong>Headend phát sóng:</strong> Nó bơm <em>tất cả</em> các kênh (đỏ, xanh, tím...) xuống con Switch Lõi cùng một lúc. Giống như đài truyền hình phát sóng ra ngoài không khí.</li>
+                    <li><strong>Ngã tư thông minh (Switch):</strong> Switch Lõi đóng vai trò như cảnh sát giao thông. Khi P.101 bấm xem VTV1, Switch <span class="text-red-400 font-semibold">chỉ mở đường cho luồng Đỏ</span> đi vào dây cáp của P.101.</li>
+                    <li><strong>Tách biệt hoàn toàn:</strong> Tương tự, cáp mạng của P.102 <span class="text-blue-400 font-semibold">chỉ phải cõng luồng Xanh</span>, và P.103 <span class="text-purple-400 font-semibold">chỉ cõng luồng Tím</span>.</li>
+                </ol>
+                <div class="mt-4 p-3 bg-slate-900 rounded border border-slate-700">
+                    <p class="text-emerald-400 font-semibold mb-1">💡 Lợi ích mang lại:</p>
+                    Dù khách sạn có 1,000 TV xem 100 kênh khác nhau, băng thông ở sợi cáp cuối cùng cắm vào mỗi TV vẫn chỉ là <strong>~5 Mbps</strong> (chỉ đúng 1 kênh). Không có TV nào bị giật lag do mạng cả!
+                </div>
+            </div>
+        `
+    }
+];
+
+function renderStep(index) {
+    const step = steps[index];
+    const buttons = document.getElementById('btn-container').children;
+
+    Array.from(buttons).forEach((btn, i) => {
+        btn.className = `px-4 py-2 text-xs font-medium rounded-lg transition-all border ${i === index ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`;
+    });
+
+    document.getElementById('info-content').innerHTML = step.html;
+
+    // Update TV labels
+    document.getElementById('txt-tv1').textContent = step.tvText[0];
+    document.getElementById('txt-tv2').textContent = step.tvText[1];
+    document.getElementById('txt-tv3').textContent = step.tvText[2];
+
+    // Reset paths and nodes
+    document.querySelectorAll('.node').forEach(n => { n.style.opacity = '0.3'; n.style.filter = 'grayscale(1)'; });
+    document.querySelectorAll('.flow-line').forEach(p => p.style.opacity = '0.1');
+    
+    // Stop all particles
+    document.querySelectorAll('.particle').forEach(p => {
+        p.classList.remove('particle-active', 'particle-active-fast');
+        p.style.opacity = '0';
+    });
+
+    // Activate current nodes & paths
+    step.activeNodes.forEach(id => { 
+        const el = document.getElementById(id);
+        if(el) { el.style.opacity = '1'; el.style.filter = 'grayscale(0)'; }
+    });
+    step.activePaths.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.style.opacity = '0.8';
+    });
+
+    // Start target particles with defined delay
+    step.particles.forEach(pData => {
+        const p = document.getElementById(pData.id);
+        if(p) {
+            // Apply class mapping
+            const animClass = pData.class || 'particle-active';
+            
+            setTimeout(() => {
+                p.classList.add(animClass);
+                p.style.opacity = '1';
+            }, parseFloat(pData.delay) * 1000);
+        }
+    });
+}
+
+function init() {
+    const container = document.getElementById('btn-container');
+    steps.forEach((s, i) => {
+        const b = document.createElement('button');
+        b.innerText = s.shortTitle;
+        b.onclick = () => renderStep(i);
+        container.appendChild(b);
+    });
+    // Bắt đầu ở bước mới nhất (Bước 4) để người dùng xem luôn
+    renderStep(3);
+}
+
+init();
+</script>
+</body>
+</html>

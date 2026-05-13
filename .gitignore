@@ -1,0 +1,25 @@
+# Secrets — tạo từ file .env.example
+platform/.env
+platform/frontend/.env
+
+# Python
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+*.py[cod]
+.venv/
+venv/
+
+# Node / frontend
+**/node_modules/
+**/dist/
+**/blob-report/
+**/test-results/
+**/playwright-report/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.swp
+.idea/

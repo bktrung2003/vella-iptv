@@ -1,0 +1,151 @@
+
+<style>
+@keyframes flow { to { stroke-dashoffset: -24; } }
+@keyframes flowRev { to { stroke-dashoffset: 24; } }
+.stream-line { stroke-dasharray: 6 4; animation: flow 1.2s linear infinite; }
+.ctrl-line   { stroke-dasharray: 4 4; animation: flow 1.8s linear infinite; }
+.step-btn { cursor:pointer; padding:6px 14px; font-size:13px; border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); background:var(--color-background-primary); color:var(--color-text-primary); }
+.step-btn.active { background:var(--color-background-info); color:var(--color-text-info); border-color:var(--color-border-info); }
+.info-box { background:var(--color-background-secondary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:12px 16px; margin:10px 0; font-size:13px; color:var(--color-text-secondary); min-height:56px; }
+.info-box strong { color:var(--color-text-primary); font-weight:500; }
+</style>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+  <button class="step-btn active" onclick="setStep(0)">1. VLC phát stream</button>
+  <button class="step-btn" onclick="setStep(1)">2. Qua Switch</button>
+  <button class="step-btn" onclick="setStep(2)">3. Vella Backend xử lý</button>
+  <button class="step-btn" onclick="setStep(3)">4. TV nhận & phát</button>
+  <button class="step-btn" onclick="setStep(4)">5. Admin quản lý</button>
+</div>
+
+<div class="info-box" id="info-text">
+  <strong>Bước 1 — VLC (nguồn video):</strong> VLC đóng vai trò như một "đài phát sóng" nội bộ. Nó đọc file video hoặc nguồn live, rồi encode thành luồng HLS (các file .m3u8 + .ts) và đẩy lên mạng nội bộ của khách sạn.
+</div>
+
+<svg width="100%" viewBox="0 0 680 400" id="main-svg" role="img">
+  <title>Luồng dữ liệu IPTV Hotel</title>
+  <desc>Sơ đồ luồng dữ liệu từ VLC qua Switch đến Vella Backend và các TV phòng khách</desc>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- VLC SOURCE -->
+  <g class="node c-amber" id="g-vlc" onclick="setStep(0)">
+    <rect x="20" y="160" width="110" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="75" y="181" text-anchor="middle" dominant-baseline="central">VLC / Source</text>
+    <text class="ts" x="75" y="199" text-anchor="middle" dominant-baseline="central">HLS stream (RTSP)</text>
+  </g>
+
+  <!-- SWITCH -->
+  <g class="node c-gray" id="g-switch" onclick="setStep(1)">
+    <rect x="200" y="160" width="110" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="255" y="181" text-anchor="middle" dominant-baseline="central">Network Switch</text>
+    <text class="ts" x="255" y="199" text-anchor="middle" dominant-baseline="central">LAN nội bộ hotel</text>
+  </g>
+
+  <!-- VELLA BACKEND (center) -->
+  <g class="node c-blue" id="g-backend" onclick="setStep(2)">
+    <rect x="380" y="140" width="140" height="76" rx="8" stroke-width="0.5"/>
+    <text class="th" x="450" y="164" text-anchor="middle" dominant-baseline="central">Vella Backend</text>
+    <text class="ts" x="450" y="182" text-anchor="middle" dominant-baseline="central">FastAPI + Redis cache</text>
+    <text class="ts" x="450" y="198" text-anchor="middle" dominant-baseline="central">Channel list + auth</text>
+  </g>
+
+  <!-- TV ROOMS -->
+  <g class="node c-teal" id="g-tv1" onclick="setStep(3)">
+    <rect x="560" y="60" width="104" height="48" rx="8" stroke-width="0.5"/>
+    <text class="th" x="612" y="78" text-anchor="middle" dominant-baseline="central">TV Phòng 101</text>
+    <text class="ts" x="612" y="96" text-anchor="middle" dominant-baseline="central">Shaka / HLS.js</text>
+  </g>
+  <g class="node c-teal" id="g-tv2" onclick="setStep(3)">
+    <rect x="560" y="156" width="104" height="48" rx="8" stroke-width="0.5"/>
+    <text class="th" x="612" y="174" text-anchor="middle" dominant-baseline="central">TV Phòng 102</text>
+    <text class="ts" x="612" y="192" text-anchor="middle" dominant-baseline="central">Shaka / HLS.js</text>
+  </g>
+  <g class="node c-teal" id="g-tv3" onclick="setStep(3)">
+    <rect x="560" y="252" width="104" height="48" rx="8" stroke-width="0.5"/>
+    <text class="th" x="612" y="270" text-anchor="middle" dominant-baseline="central">TV Phòng 103</text>
+    <text class="ts" x="612" y="288" text-anchor="middle" dominant-baseline="central">Shaka / HLS.js</text>
+  </g>
+
+  <!-- ADMIN -->
+  <g class="node c-purple" id="g-admin" onclick="setStep(4)">
+    <rect x="380" y="300" width="140" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="450" y="321" text-anchor="middle" dominant-baseline="central">Admin Dashboard</text>
+    <text class="ts" x="450" y="339" text-anchor="middle" dominant-baseline="central">Quản lý kênh, phòng</text>
+  </g>
+
+  <!-- PMS -->
+  <g class="node c-gray" id="g-pms" onclick="sendPrompt('PMS Integration trong IPTV hotel là gì, kết nối Opera/Infor như thế nào?')">
+    <rect x="200" y="300" width="110" height="56" rx="8" stroke-width="0.5"/>
+    <text class="th" x="255" y="321" text-anchor="middle" dominant-baseline="central">PMS (Opera)</text>
+    <text class="ts" x="255" y="339" text-anchor="middle" dominant-baseline="central">Room mapping</text>
+  </g>
+
+  <!-- STREAM LINES: VLC → Switch -->
+  <line id="l1" x1="130" y1="188" x2="198" y2="188" stroke="#BA7517" stroke-width="2" class="stream-line" marker-end="url(#arr)" opacity="1"/>
+
+  <!-- Switch → Backend -->
+  <line id="l2" x1="310" y1="188" x2="378" y2="188" stroke="#378ADD" stroke-width="2" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+
+  <!-- Backend → TV1 -->
+  <path id="l3a" d="M520 165 L540 165 L540 84 L558 84" fill="none" stroke="#1D9E75" stroke-width="1.5" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+  <!-- Backend → TV2 -->
+  <line id="l3b" x1="520" y1="180" x2="558" y2="180" fill="none" stroke="#1D9E75" stroke-width="1.5" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+  <!-- Backend → TV3 -->
+  <path id="l3c" d="M520 195 L540 195 L540 276 L558 276" fill="none" stroke="#1D9E75" stroke-width="1.5" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+
+  <!-- PMS → Backend (ctrl) -->
+  <path id="l4" d="M310 328 L380 328" fill="none" stroke="#534AB7" stroke-width="1.5" class="ctrl-line" marker-end="url(#arr)" opacity="0.3"/>
+
+  <!-- Admin ↔ Backend (ctrl) -->
+  <line id="l5" x1="450" y1="298" x2="450" y2="218" stroke="#534AB7" stroke-width="1.5" class="ctrl-line" marker-end="url(#arr)" opacity="0.3"/>
+
+  <!-- Legend -->
+  <line x1="22" y1="360" x2="54" y2="360" stroke="#BA7517" stroke-width="2" stroke-dasharray="6 4"/>
+  <text class="ts" x="60" y="364">Video stream (HLS/RTSP)</text>
+  <line x1="220" y1="360" x2="252" y2="360" stroke="#534AB7" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <text class="ts" x="258" y="364">Control / API</text>
+  <line x1="380" y1="360" x2="412" y2="360" stroke="#1D9E75" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text class="ts" x="418" y="364">Stream tới TV</text>
+</svg>
+
+<script>
+const steps = [
+  {
+    lines: { l1:1, l2:0.2, l3a:0.15, l3b:0.15, l3c:0.15, l4:0.2, l5:0.2 },
+    info: '<strong>Bước 1 — VLC (nguồn video):</strong> VLC đọc file video hoặc source live, encode thành luồng <strong>HLS</strong> (file .m3u8 + các segment .ts nhỏ ~2-6 giây). Nó push lên địa chỉ IP nội bộ, ví dụ <code>rtsp://192.168.1.50:8554/channel1</code>. Đây là "đài phát" của hệ thống.'
+  },
+  {
+    lines: { l1:1, l2:1, l3a:0.15, l3b:0.15, l3c:0.15, l4:0.2, l5:0.2 },
+    info: '<strong>Bước 2 — Network Switch:</strong> Switch chỉ là thiết bị chuyển mạch vật lý — nó <em>không hiểu</em> video, chỉ chuyển gói tin. Tất cả thiết bị (VLC server, Ubuntu server, các TV) đều nằm cùng VLAN. Lưu ý: nên dùng switch có hỗ trợ <strong>IGMP Snooping</strong> để tối ưu multicast cho nhiều TV cùng lúc.'
+  },
+  {
+    lines: { l1:0.3, l2:1, l3a:1, l3b:1, l3c:1, l4:0.8, l5:0.8 },
+    info: '<strong>Bước 3 — Vella Backend xử lý:</strong> TV không kết nối thẳng tới VLC. TV gọi API: <em>"Tôi là phòng 101, cho tôi danh sách kênh"</em>. Backend kiểm tra JWT auth, tra cứu room mapping, lấy channel list từ Redis cache, trả về URL stream của từng kênh. TV dùng URL đó để fetch HLS trực tiếp từ VLC/CDN.'
+  },
+  {
+    lines: { l1:0.3, l2:0.6, l3a:1, l3b:1, l3c:1, l4:0.2, l5:0.2 },
+    info: '<strong>Bước 4 — TV phòng khách nhận stream:</strong> TV (chạy Guest UI Next.js) dùng <strong>Shaka Player hoặc HLS.js</strong> để decode và phát video. Nó fetch các segment HLS (.ts file) trực tiếp từ VLC server theo địa chỉ URL backend đã cung cấp. Khách dùng D-Pad remote điều hướng giao diện TV-First.'
+  },
+  {
+    lines: { l1:0.2, l2:0.2, l3a:0.3, l3b:0.3, l3c:0.3, l4:1, l5:1 },
+    info: '<strong>Bước 5 — Admin Dashboard quản lý:</strong> Lễ tân hoặc IT manager dùng Admin Portal để: thêm/xóa kênh, ánh xạ phòng ↔ gói kênh, gửi Emergency Alert tới toàn bộ TV, xem trạng thái từng TV đang xem kênh nào. PMS (Opera/Infor) tự động đồng bộ thông tin phòng check-in/check-out.'
+  }
+];
+
+let current = 0;
+
+function setStep(i) {
+  current = i;
+  document.querySelectorAll('.step-btn').forEach((b,j) => b.classList.toggle('active', j===i));
+  const s = steps[i];
+  Object.entries(s.lines).forEach(([id, op]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.opacity = op;
+  });
+  document.getElementById('info-text').innerHTML = s.info;
+}
+</script>

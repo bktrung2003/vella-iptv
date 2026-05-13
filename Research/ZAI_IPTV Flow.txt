@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vella IPTV - Kiến Trúc Hệ Thống</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #060a12;
+            --bg2: #0c1221;
+            --card: #111b2e;
+            --card-hover: #162240;
+            --border: #1a2a48;
+            --border-active: #00e5a0;
+            --fg: #e2e8f0;
+            --fg-muted: #5a6a85;
+            --accent: #00e5a0;
+            --accent2: #06b6d4;
+            --request: #00e5a0;
+            --response: #f5a623;
+            --danger: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Nền chấm */
+        .dot-grid {
+            background-image: radial-gradient(circle, rgba(0,229,160,0.04) 1px, transparent 1px);
+            background-size: 28px 28px;
+        }
+
+        /* Node cơ bản */
+        .node {
+            background: var(--card);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(.4,0,.2,1);
+            position: relative;
+            z-index: 2;
+            min-width: 130px;
+            text-align: center;
+        }
+        .node:hover {
+            background: var(--card-hover);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0,229,160,0.12);
+        }
+        .node.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 24px rgba(0,229,160,0.2), inset 0 0 12px rgba(0,229,160,0.05);
+        }
+        .node.dimmed {
+            opacity: 0.2;
+            filter: grayscale(0.7);
+            pointer-events: none;
+        }
+        .node .icon-wrap {
+            width: 38px; height: 38px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 8px;
+            font-size: 16px;
+        }
+        .node .node-name {
+            font-weight: 600;
+            font-size: 12.5px;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+        .node .node-tech {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9.5px;
+            color: var(--fg-muted);
+            margin-top: 4px;
+        }
+        .node .port-badge {
+            position: absolute;
+            top: -8px; right: -8px;
+            background: var(--accent);
+            color: var(--bg);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 6px;
+            line-height: 1.5;
+        }
+
+        /* Zone */
+        .zone-box {
+            border: 1.5px dashed var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            position: relative;
+        }
+        .zone-label {
+            position: absolute;
+            top: -11px; left: 20px;
+            background: var(--bg2);
+            padding: 0 10px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--fg-muted);
+        }
+
+        /* Server box */
+        .server-box {
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            padding: 20px 16px 14px;
+            position: relative;
+            background: linear-gradient(135deg, rgba(0,229,160,0.02), rgba(6,182,212,0.02));
+        }
+        .server-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 14px 14px 0 0;
+        }
+
+        /* Infra bar */
+        .infra-item {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 14px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .infra-item i { color: var(--accent2); margin-right: 5px; }
+
+        /* Scenario buttons */
+        .scenario-btn {
+            padding: 9px 20px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
+            background: var(--card);
+            color: var(--fg-muted);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .scenario-btn:hover { border-color: var(--accent); color: var(--fg); }
+        .scenario-btn.active {
+            background: linear-gradient(135deg, rgba(0,229,160,0.15), rgba(6,182,212,0.1));
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 16px rgba(0,229,160,0.12);
+        }
+        .scenario-btn .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--fg-muted);
+            transition: background 0.3s;
+        }
+        .scenario-btn.active .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+        /* Step bar */
+        .step-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            transition: all 0.4s;
+        }
+        .step-item.highlight {
+            border-color: var(--accent);
+            background: rgba(0,229,160,0.06);
+        }
+        .step-num {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: var(--border);
+            color: var(--fg-muted);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700;
+            flex-shrink: 0;
+            transition: all 0.4s;
+        }
+        .step-item.highlight .step-num {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        .step-text { font-size: 12px; line-height: 1.5; color: var(--fg-muted); }
+        .step-item.highlight .step-text { color: var(--fg); }
+
+        /* Info panel */
+        .info-panel {
+            position: fixed;
+            top: 0; right: 0;
+            width: 380px; height: 100vh;
+            background: var(--bg2);
+            border-left: 1.5px solid var(--border);
+            z-index: 100;
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(.4,0,.2,1);
+            overflow-y: auto;
+            padding: 28px 24px;
+        }
+        .info-panel.open { transform: translateX(0); }
+        .info-panel .close-btn {
+            position: absolute;
+            top: 16px; right: 16px;
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--fg-muted);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .info-panel .close-btn:hover { border-color: var(--danger); color: var(--danger); }
+        .info-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px;
+            font-weight: 600;
+        }
+
+        /* Legend */
+        .legend-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 8px rgba(0,229,160,0.15); }
+            50% { box-shadow: 0 0 20px rgba(0,229,160,0.3); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="px-6 pt-5 pb-3">
+        <div class="max-w-[1400px] mx-auto">
+            <div class="flex flex-wrap items-end justify-between gap-4 mb-5">
+                <div>
+                    <div class="flex items-center gap-3 mb-1">
+                        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#00e5a0] to-[#06b6d4] flex items-center justify-center">
+                            <i class="fa-solid fa-tower-broadcast text-[#060a12] text-sm"></i>
+                        </div>
+                        <h1 class="text-xl font-bold tracking-tight">Vella IPTV</h1>
+                        <span class="mono text-[10px] px-2 py-0.5 rounded bg-[#111b2e] text-[#5a6a85] border border-[#1a2a48]">Docker Stack</span>
+                    </div>
+                    <p class="text-[13px] text-[#5a6a85] ml-12">Mô hình kiến trúc hệ thống IPTV cho khách sạn — Tương tác để hiểu luồng dữ liệu</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="legend-dot mr-1" style="background: var(--request);"></div>
+                    <span class="text-[11px] text-[#5a6a85]">Request</span>
+                    <div class="legend-dot ml-3 mr-1" style="background: var(--response);"></div>
+                    <span class="text-[11px] text-[#5a6a85]">Response</span>
+                </div>
+            </div>
+            <!-- Scenario buttons -->
+            <div class="flex flex-wrap gap-3" id="scenario-bar">
+                <button class="scenario-btn active" data-scenario="guest" onclick="setScenario('guest')">
+                    <span class="dot"></span>
+                    <i class="fa-solid fa-tv text-xs"></i>
+                    Guest xem TV
+                </button>
+                <button class="scenario-btn" data-scenario="admin" onclick="setScenario('admin')">
+                    <span class="dot"></span>
+                    <i class="fa-solid fa-user-shield text-xs"></i>
+                    Admin quản lý
+                </button>
+                <button class="scenario-btn" data-scenario="content" onclick="setScenario('content')">
+                    <span class="dot"></span>
+                    <i class="fa-solid fa-film text-xs"></i>
+                    Truyền nội dung
+                </button>
+                <button class="scenario-btn" data-scenario="all" onclick="setScenario('all')">
+                    <span class="dot"></span>
+                    <i class="fa-solid fa-diagram-project text-xs"></i>
+                    Toàn bộ luồng
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Diagram -->
+    <main class="px-6 pb-4">
+        <div class="max-w-[1400px] mx-auto">
+            <div id="diagram" class="dot-grid rounded-2xl border border-[#1a2a48] bg-[#0a0f1a] p-5 relative overflow-x-auto" style="min-height: 520px;">
+                <div class="flex gap-5 relative" style="min-width: 1080px;">
+
+                    <!-- Cột trái: Thiết bị cuối -->
+                    <div class="flex flex-col gap-4" style="width: 250px; flex-shrink: 0;">
+                        <div class="zone-box flex-1 flex flex-col gap-3">
+                            <span class="zone-label">Thiết Bị Cuối</span>
+
+                            <!-- 3 TV -->
+                            <div class="flex gap-2 mt-2">
+                                <div class="node flex-1" id="tv1" onclick="showInfo('tv1')">
+                                    <div class="icon-wrap" style="background: rgba(0,229,160,0.1); color: var(--accent);">
+                                        <i class="fa-solid fa-tv"></i>
+                                    </div>
+                                    <div class="node-name">TV Phòng 101</div>
+                                    <div class="node-tech">STB / Smart TV</div>
+                                </div>
+                                <div class="node flex-1" id="tv2" onclick="showInfo('tv2')">
+                                    <div class="icon-wrap" style="background: rgba(0,229,160,0.1); color: var(--accent);">
+                                        <i class="fa-solid fa-tv"></i>
+                                    </div>
+                                    <div class="node-name">TV Phòng 102</div>
+                                    <div class="node-tech">STB / Smart TV</div>
+                                </div>
+                                <div class="node flex-1" id="tv3" onclick="showInfo('tv3')">
+                                    <div class="icon-wrap" style="background: rgba(0,229,160,0.1); color: var(--accent);">
+                                        <i class="fa-solid fa-tv"></i>
+                                    </div>
+                                    <div class="node-name">TV Phòng 103</div>
+                                    <div class="node-tech">STB / Smart TV</div>
+                                </div>
+                            </div>
+
+                            <!-- Admin PC -->
+                            <div class="node" id="admin-pc" onclick="showInfo('admin-pc')">
+                                <div class="icon-wrap" style="background: rgba(245,166,35,0.1); color: var(--response);">
+                                    <i class="fa-solid fa-desktop"></i>
+                                </div>
+                                <div class="node-name">Admin PC</div>
+                                <div class="node-tech">IT Manager / Back Office</div>
+                            </div>
+
+                            <!-- VOD Source -->
+                            <div class="node" id="vod-source" onclick="showInfo('vod-source')">
+                                <div class="icon-wrap" style="background: rgba(6,182,212,0.1); color: var(--accent2);">
+                                    <i class="fa-solid fa-server"></i>
+                                </div>
+                                <div class="node-name">Nguồn Nội Dung</div>
+                                <div class="node-tech">VOD / Live / CDN</div>
+                            </div>
+
+                            <div class="mt-auto pt-2 text-center">
+                                <span class="mono text-[9.5px] text-[#5a6a85]">VLAN 10 — 192.168.10.0/24</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cột giữa: Switch -->
+                    <div class="flex flex-col items-center justify-center" style="width: 140px; flex-shrink: 0;">
+                        <div class="zone-box w-full flex flex-col items-center justify-center" style="min-height: 200px;">
+                            <span class="zone-label">Mạng Nội Bộ</span>
+                            <div class="node" id="switch" onclick="showInfo('switch')" style="min-width: 110px; margin-top: 12px;">
+                                <div class="icon-wrap" style="background: rgba(0,229,160,0.1); color: var(--accent); width: 44px; height: 44px;">
+                                    <i class="fa-solid fa-network-wired text-lg"></i>
+                                </div>
+                                <div class="node-name">Switch L2/L3</div>
+                                <div class="node-tech">Managed Switch</div>
+                                <div class="port-badge">48 Port</div>
+                            </div>
+                            <div class="mt-4 space-y-1 text-center">
+                                <div class="mono text-[9px] text-[#5a6a85]">Trunk → Server Port</div>
+                                <div class="mono text-[9px] text-[#5a6a85]">Access → TV Ports</div>
+                                <div class="mono text-[9px] text-[#5a6a85]">QoS: DSCP EF/AF41</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cột phải: Docker Host -->
+                    <div class="flex-1" style="min-width: 580px;">
+                        <div class="server-box">
+                            <div class="zone-label" style="background: var(--bg); left: 20px; color: var(--accent);">Docker Host — IPTV Server</div>
+
+                            <!-- vella-proxy -->
+                            <div class="flex justify-center mb-4 mt-2">
+                                <div class="node" id="proxy" onclick="showInfo('proxy')" style="min-width: 200px;">
+                                    <div class="port-badge">:80/:443</div>
+                                    <div class="icon-wrap" style="background: rgba(0,229,160,0.12); color: var(--accent);">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                    </div>
+                                    <div class="node-name">vella-proxy</div>
+                                    <div class="node-tech">Nginx — Reverse Proxy</div>
+                                </div>
+                            </div>
+
+                            <!-- Guest UI + Admin Portal -->
+                            <div class="flex gap-4 mb-4">
+                                <div class="node flex-1" id="guest-ui" onclick="showInfo('guest-ui')">
+                                    <div class="port-badge">:8080</div>
+                                    <div class="icon-wrap" style="background: rgba(0,229,160,0.08); color: #34d399;">
+                                        <i class="fa-solid fa-display"></i>
+                                    </div>
+                                    <div class="node-name">vella-guest-ui</div>
+                                    <div class="node-tech">Vue.js — Guest Interface</div>
+                                </div>
+                                <div class="node flex-1" id="admin-portal" onclick="showInfo('admin-portal')">
+                                    <div class="port-badge">:8081</div>
+                                    <div class="icon-wrap" style="background: rgba(245,166,35,0.08); color: var(--response);">
+                                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                                    </div>
+                                    <div class="node-name">vella-admin-portal</div>
+                                    <div class="node-tech">Vue.js — Admin Panel</div>
+                                </div>
+                            </div>
+
+                            <!-- vella-backend -->
+                            <div class="flex justify-center mb-4">
+                                <div class="node" id="backend" onclick="showInfo('backend')" style="min-width: 220px; border-color: rgba(6,182,212,0.3);">
+                                    <div class="port-badge">:3000</div>
+                                    <div class="icon-wrap" style="background: rgba(6,182,212,0.12); color: var(--accent2); width: 42px; height: 42px;">
+                                        <i class="fa-solid fa-gear text-lg"></i>
+                                    </div>
+                                    <div class="node-name">vella-backend</div>
+                                    <div class="node-tech">Node.js / Express — REST API</div>
+                                </div>
+                            </div>
+
+                            <!-- DB + Cache -->
+                            <div class="flex gap-4 mb-4">
+                                <div class="node flex-1" id="db" onclick="showInfo('db')">
+                                    <div class="port-badge">:5432</div>
+                                    <div class="icon-wrap" style="background: rgba(99,102,241,0.1); color: #818cf8;">
+                                        <i class="fa-solid fa-database"></i>
+                                    </div>
+                                    <div class="node-name">vella-db</div>
+                                    <div class="node-tech">PostgreSQL — Data Store</div>
+                                </div>
+                                <div class="node flex-1" id="cache" onclick="showInfo('cache')">
+                                    <div class="port-badge">:6379</div>
+                                    <div class="icon-wrap" style="background: rgba(239,68,68,0.08); color: #f87171;">
+                                        <i class="fa-solid fa-bolt"></i>
+                                    </div>
+                                    <div class="node-name">vella-cache</div>
+                                    <div class="node-tech">Redis — Cache Layer</div>
+                                </div>
+                            </div>
+
+                            <!-- Infrastructure bar -->
+                            <div class="flex gap-3 pt-3 border-t border-[#1a2a48]">
+                                <div class="infra-item flex-1">
+                                    <i class="fa-brands fa-ubuntu"></i>Ubuntu Server 22.04
+                                </div>
+                                <div class="infra-item flex-1">
+                                    <i class="fa-brands fa-docker"></i>Docker Engine
+                                </div>
+                                <div class="infra-item flex-1">
+                                    <i class="fa-solid fa-cubes"></i>Portainer CE
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Canvas overlay cho animated connections -->
+                <canvas id="flow-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></canvas>
+            </div>
+
+            <!-- Step bar -->
+            <div id="step-bar" class="mt-4 grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+                <!-- Được populate bằng JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Info Panel -->
+    <div class="info-panel" id="info-panel">
+        <button class="close-btn" onclick="closeInfo()" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+        <div id="info-content"></div>
+    </div>
+
+    <!-- Overlay -->
+    <div id="overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:99;display:none;" onclick="closeInfo()"></div>
+
+    <script>
+    // ========== DỮ LIỆU THÀNH PHẦN ==========
+    const componentData = {
+        tv1: {
+            name: 'TV Phòng 101',
+            icon: 'fa-solid fa-tv',
+            color: '#00e5a0',
+            tech: ['Set-top Box (STB)', 'Smart TV / LG / Samsung'],
+            desc: 'Thiết bị đầu cuối trong phòng khách. STB hoặc Smart TV kết nối tới mạng LAN của khách sạn, gửi HTTP request đến hệ thống IPTV để hiển thị giao diện và phát nội dung.',
+            role: 'Client — Gửi request, nhận HTML/JS, phát stream HLS',
+            detail: 'IP: 192.168.10.101 | DHCP Reservation\nMAC Binding trên Switch Port\nVLAN 10 — Access Port\nGiải mã: H.264/H.265 → HDMI'
+        },
+        tv2: {
+            name: 'TV Phòng 102',
+            icon: 'fa-solid fa-tv',
+            color: '#00e5a0',
+            tech: ['Set-top Box (STB)', 'Smart TV'],
+            desc: 'Tương tự TV Phòng 101, mỗi phòng có một thiết bị đầu cuối riêng biệt kết nối tới hệ thống.',
+            role: 'Client — Tương tự phòng 101',
+            detail: 'IP: 192.168.10.102\nCó thể là STB riêng hoặc tích hợp Smart TV\nMỗi phòng được cấu hình channel list riêng'
+        },
+        tv3: {
+            name: 'TV Phòng 103',
+            icon: 'fa-solid fa-tv',
+            color: '#00e5a0',
+            tech: ['Set-top Box (STB)', 'Smart TV'],
+            desc: 'Đại diện cho các phòng khách còn lại trong hệ thống. Có thể mở rộng lên hàng trăm phòng.',
+            role: 'Client — Tương tự các phòng khác',
+            detail: 'IP: 192.168.10.103\nHệ thống hỗ trợ 50–500+ phòng\nMỗi STB có session riêng trong Redis'
+        },
+        'admin-pc': {
+            name: 'Admin PC',
+            icon: 'fa-solid fa-desktop',
+            color: '#f5a623',
+            tech: ['Trình duyệt Web', 'Windows / macOS'],
+            desc: 'Máy tính của IT Manager hoặc nhân viên back-office. Truy cập Admin Portal qua trình duyệt để quản lý kênh, nội dung VOD, cấu hình hệ thống, xem log và thống kê.',
+            role: 'Admin Client — Quản trị hệ thống IPTV',
+            detail: 'Truy cập: http://<server-ip>/admin\nXác thực: Username + Password\nPhân quyền: Super Admin / Operator / Viewer\nCó thể truy cập từ xa qua VPN'
+        },
+        'vod-source': {
+            name: 'Nguồn Nội Dung',
+            icon: 'fa-solid fa-server',
+            color: '#06b6d4',
+            tech: ['VOD Server', 'Live Encoder', 'CDN'],
+            desc: 'Lưu trữ và phân phát nội dung video: phim VOD, kênh TV truyền hình, nhạc, thông tin khách sạn. Có thể là file server nội bộ hoặc kết nối CDN bên ngoài.',
+            role: 'Content Provider — Cung cấp stream HLS/DASH',
+            detail: 'Định dạng: HLS (.m3u8 + .ts)\nLive TV: UDP Multicast hoặc SRT\nVOD: MP4 transcoded → HLS\nLưu trữ: NAS / Object Storage\nBăng thông cần: ~5-8 Mbps/phòng'
+        },
+        switch: {
+            name: 'Switch L2/L3',
+            icon: 'fa-solid fa-network-wired',
+            color: '#00e5a0',
+            tech: ['Managed Switch', 'Cisco / HPE / Ubiquiti'],
+            desc: 'Thiết bị chuyển mạch quản lý toàn bộ traffic mạng IPTV. Phân VLAN, cấu hình QoS ưu tiên video, trunk đến máy chủ. Đóng vai trò trung tâm trong luồng dữ liệu vật lý.',
+            role: 'Network Core — Định tuyến gói tin giữa thiết bị cuối và server',
+            detail: 'VLAN 10: IPTV (192.168.10.0/24)\nVLAN 20: Management (192.168.20.0/24)\nQoS: DSCP EF cho live TV, AF41 cho VOD\nIGMP Snooping cho multicast\nTrunk Port → Server NIC (LACP)\nSpanning Tree Protocol enabled\n48 Port 1Gbps + Uplink 10Gbps'
+        },
+        proxy: {
+            name: 'vella-proxy',
+            icon: 'fa-solid fa-shield-halved',
+            color: '#00e5a0',
+            tech: ['Nginx', 'Reverse Proxy', 'SSL Termination'],
+            desc: 'Cổng vào duy nhất của hệ thống. Nhận tất cả request từ TV và Admin PC, phân loại và forward đến service tương ứng (guest-ui hoặc admin-portal) dựa trên URL path. Cũng xử lý SSL, rate limiting, và static file serving.',
+            role: 'Gateway — Entry point, routing, bảo mật tầng mạng',
+            detail: 'Port: 80 (HTTP), 443 (HTTPS)\nLocation / → vella-guest-ui:8080\nLocation /admin → vella-admin-portal:8081\nLocation /api → vella-backend:3000\nRate Limit: 100 req/s per IP\nStatic files: /assets/* serve trực tiếp\nDocker image: nginx:alpine + custom config'
+        },
+        'guest-ui': {
+            name: 'vella-guest-ui',
+            icon: 'fa-solid fa-display',
+            color: '#34d399',
+            tech: ['Vue.js 3', 'Vite', 'TypeScript'],
+            desc: 'Giao diện người dùng hiển thị trên TV của khách. SPA (Single Page Application) với các trang: danh sách kênh TV, thư viện VOD, thông tin khách sạn, dịch vụ (đặt phòng, wake-up call), welcome screen.',
+            role: 'Frontend — Render UI trên TV, gọi API qua backend',
+            detail: 'Port nội bộ: 8080\nBuild: Vite → static files → Nginx serve\nTính năng: Channel list, VOD browser, Hotel info, Room service\nGọi API: GET /api/channels, GET /api/vod, POST /api/room-service\nOptimized cho remote control navigation\nAuto-refresh welcome screen khi không hoạt động'
+        },
+        'admin-portal': {
+            name: 'vella-admin-portal',
+            icon: 'fa-solid fa-screwdriver-wrench',
+            color: '#f5a623',
+            tech: ['Vue.js 3', 'Vite', 'Element Plus UI'],
+            desc: 'Giao diện quản trị dành cho IT Admin và nhân viên quản lý. Quản lý kênh TV, nội dung VOD, cấu hình phòng, phân quyền user, xem dashboard thống kê (online rooms, bandwidth), quản lý template welcome screen.',
+            role: 'Admin Frontend — Quản lý toàn bộ hệ thống',
+            detail: 'Port nội bộ: 8081\nTruy cập qua: /admin trên proxy\nTính năng: Channel management, VOD upload, Room config, User RBAC\nDashboard: Online rooms, Bandwidth usage, Error logs\nXác thực: JWT Token từ backend\nAudit log cho mọi thao tác'
+        },
+        backend: {
+            name: 'vella-backend',
+            icon: 'fa-solid fa-gear',
+            color: '#06b6d4',
+            tech: ['Node.js', 'Express.js', 'TypeScript'],
+            desc: 'Xử lý logic nghiệp vụ chính của hệ thống. Cung cấp REST API cho cả guest-ui và admin-portal. Xử lý: xác thực, quản lý kênh/nội dung, session quản lý theo phòng, gọi content source để lấy stream URL.',
+            role: 'Core API — Xử lý business logic, kết nối DB/Cache',
+            detail: 'Port: 3000\nEndpoints: /api/auth, /api/channels, /api/vod, /api/rooms, /api/settings\nAuth: JWT + Refresh Token\nMiddleware: Rate limit, CORS, Request logging\nKết nối: vella-db (TypeORM/Prisma), vella-cache (ioredis)\nHealth check: GET /api/health\nEnvironment config qua .env'
+        },
+        db: {
+            name: 'vella-db',
+            icon: 'fa-solid fa-database',
+            color: '#818cf8',
+            tech: ['PostgreSQL 15', 'TypeORM/Prisma'],
+            desc: 'Database chính lưu trữ toàn bộ dữ liệu có cấu trúc: danh sách kênh TV, metadata VOD, thông tin phòng, cấu hình hệ thống, user accounts, audit logs.',
+            role: 'Persistent Storage — Lưu trữ dữ liệu lâu dài',
+            detail: 'Port: 5432\nTables: channels, vod_items, rooms, users, settings, audit_logs\nBackup: pg_dump hàng ngày → NAS\nReplication: Read replica cho reporting\nConnection pool: pgBouncer\nVolume: Docker named volume → /var/lib/postgresql/data\nIndexing optimize cho query kênh/phòng'
+        },
+        cache: {
+            name: 'vella-cache',
+            icon: 'fa-solid fa-bolt',
+            color: '#f87171',
+            tech: ['Redis 7', 'ioredis client'],
+            desc: 'Lớp cache tăng tốc cho hệ thống. Cache danh sách kênh, metadata VOD, session thông tin phòng, rate limit counters. Giảm tải đáng kể cho PostgreSQL và cải thiện thời gian phản hồi.',
+            role: 'Cache Layer — Tăng tốc truy vấn, quản lý session',
+            detail: 'Port: 6379\nCache keys: channels:list, vod:metadata:*, room:session:*\nTTL: channels 300s, session 24h, metadata 600s\nPub/Sub: Notify các backend instance khi có thay đổi cấu hình\nMemory limit: 512MB max\nPersistence: RDB snapshot mỗi 5 phút\nUsed for: Cache-aside pattern cho DB queries'
+        }
+    };
+
+    // ========== KẾT NỐI ==========
+    const connections = [
+        // TV → Switch
+        { from: 'tv1', to: 'switch', scenarios: ['guest', 'content', 'all'] },
+        { from: 'tv2', to: 'switch', scenarios: ['guest', 'content', 'all'] },
+        { from: 'tv3', to: 'switch', scenarios: ['guest', 'content', 'all'] },
+        // Admin PC → Switch
+        { from: 'admin-pc', to: 'switch', scenarios: ['admin', 'all'] },
+        // VOD → Switch
+        { from: 'vod-source', to: 'switch', scenarios: ['content', 'all'] },
+        // Switch → Proxy
+        { from: 'switch', to: 'proxy', scenarios: ['guest', 'admin', 'content', 'all'] },
+        // Proxy → UI services
+        { from: 'proxy', to: 'guest-ui', scenarios: ['guest', 'content', 'all'] },
+        { from: 'proxy', to: 'admin-portal', scenarios: ['admin', 'all'] },
+        // UI → Backend
+        { from: 'guest-ui', to: 'backend', scenarios: ['guest', 'content', 'all'] },
+        { from: 'admin-portal', to: 'backend', scenarios: ['admin', 'all'] },
+        // Backend → DB/Cache
+        { from: 'backend', to: 'cache', scenarios: ['guest', 'admin', 'content', 'all'] },
+        { from: 'backend', to: 'db', scenarios: ['guest', 'admin', 'all'] },
+    ];
+
+    // ========== SCENARIO STEPS ==========
+    const scenarioSteps = {
+        guest: [
+            { nodes: ['tv1'], text: 'Khách bật TV → STB gửi HTTP GET request đến IP của server (qua Switch)' },
+            { nodes: ['tv1', 'switch'], text: 'Gói tin đi từ TV Port (VLAN 10 Access) → Switch → Trunk Port đến Server' },
+            { nodes: ['switch', 'proxy'], text: 'Switch forward gói tin đến vella-proxy (port 80) trên Docker Host' },
+            { nodes: ['proxy', 'guest-ui'], text: 'vella-proxy phân tích URL path "/" → forward request đến vella-guest-ui:8080' },
+            { nodes: ['guest-ui'], text: 'vella-guest-ui trả về SPA HTML/JS/CSS → Proxy gửi về TV → Browser render giao diện' },
+            { nodes: ['guest-ui', 'backend'], text: 'Guest UI gọi API GET /api/channels → Proxy route đến vella-backend:3000' },
+            { nodes: ['backend', 'cache'], text: 'Backend kiểm tra Redis cache trước: key "channels:list" → Cache HIT! Trả về ngay' },
+            { nodes: ['backend', 'db'], text: 'Nếu Cache MISS → Query PostgreSQL: SELECT * FROM channels → Lưu vào Redis cache' },
+            { nodes: ['tv1'], text: 'Danh sách kênh hiển thị trên TV. Khách chọn kênh → HLS player bắt đầu phát stream' },
+        ],
+        admin: [
+            { nodes: ['admin-pc'], text: 'Admin mở trình duyệt → Truy cập http://<server-ip>/admin' },
+            { nodes: ['admin-pc', 'switch'], text: 'Request đi qua mạng nội bộ → Switch → Trunk đến Server' },
+            { nodes: ['switch', 'proxy'], text: 'vella-proxy nhận request path "/admin" → Route đến vella-admin-portal:8081' },
+            { nodes: ['proxy', 'admin-portal'], text: 'Admin Portal trả về giao diện quản trị → Admin nhập username/password' },
+            { nodes: ['admin-portal', 'backend'], text: 'POST /api/auth/login → vella-backend xác thực credentials' },
+            { nodes: ['backend', 'db'], text: 'Backend query vella-db: kiểm tra user + hash password → Trả về JWT token' },
+            { nodes: ['backend', 'cache'], text: 'Session Admin được cache vào Redis (key: session:admin:<id>) cho các request tiếp theo' },
+            { nodes: ['admin-portal'], text: 'Admin đăng nhập thành công → Dashboard hiển thị: phòng online, bandwidth, errors' },
+        ],
+        content: [
+            { nodes: ['tv1'], text: 'Khách chọn nội dung VOD trên TV → Guest UI gọi API GET /api/vod/:id/stream-url' },
+            { nodes: ['tv1', 'switch', 'proxy', 'guest-ui', 'backend'], text: 'Request đi qua: TV → Switch → Proxy → Guest UI → Backend' },
+            { nodes: ['backend', 'cache'], text: 'Backend kiểm tra cache: key "vod:metadata:<id>" → Lấy thông tin nội dung' },
+            { nodes: ['backend', 'db'], text: 'Nếu cache miss → Query DB lấy metadata: tiêu đề, mô tả, duration, source path' },
+            { nodes: ['backend'], text: 'Backend tạo HLS stream URL từ Nguồn Nội Dung → Trả về cho Guest UI' },
+            { nodes: ['tv1', 'switch'], text: 'TV nhận stream URL → HLS player kết nối trực tiếp đến VOD Server để phát video' },
+            { nodes: ['vod-source', 'switch', 'tv1'], text: 'Luồng streaming: VOD Server → Switch → TV (không qua Backend, tiết kiệm tài nguyên)' },
+            { nodes: ['tv1'], text: 'Video phát trên TV. Backend chỉ đóng vai trò cung cấp URL, không relay video data' },
+        ],
+        all: [
+            { nodes: ['tv1', 'tv2', 'tv3', 'admin-pc', 'vod-source', 'switch'], text: 'TẤT CẢ thiết bị cuối kết nối qua Switch L2/L3 — VLAN phân tách traffic' },
+            { nodes: ['switch', 'proxy'], text: 'Switch trunk tất cả traffic IPTV đến vella-proxy (cổng vào duy nhất)' },
+            { nodes: ['proxy', 'guest-ui', 'admin-portal'], text: 'Proxy phân route: "/" → Guest UI, "/admin" → Admin Portal' },
+            { nodes: ['guest-ui', 'admin-portal', 'backend'], text: 'Cả hai Frontend đều gọi REST API đến vella-backend xử lý logic' },
+            { nodes: ['backend', 'cache', 'db'], text: 'Backend dùng Cache-aside pattern: Check Redis → Miss thì query PostgreSQL → Lưu cache' },
+            { nodes: ['tv1', 'tv2', 'tv3', 'vod-source'], text: 'Streaming trực tiếp: TV kết nối VOD Server qua Switch, không qua Backend API' },
+            { nodes: ['proxy', 'backend', 'db', 'cache'], text: 'Tất cả services chạy trong Docker containers trên Ubuntu Server, quản lý qua Portainer CE' },
+        ]
+    };
+
+    // ========== BIẾN TOÀN CỤC ==========
+    let currentScenario = 'guest';
+    let particles = [];
+    let animFrameId = null;
+    let stepHighlightIndex = 0;
+    let stepTimer = null;
+    const canvas = document.getElementById('flow-canvas');
+    const ctx = canvas.getContext('2d');
+    const diagramEl = document.getElementById('diagram');
+
+    // ========== CANVAS SETUP ==========
+    function resizeCanvas() {
+        const rect = diagramEl.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    // Lấy tâm của node so với canvas
+    function getNodeCenter(id) {
+        const node = document.getElementById(id);
+        if (!node) return null;
+        const cRect = canvas.getBoundingClientRect();
+        const nRect = node.getBoundingClientRect();
+        return {
+            x: nRect.left + nRect.width / 2 - cRect.left,
+            y: nRect.top + nRect.height / 2 - cRect.top,
+            w: nRect.width,
+            h: nRect.height
+        };
+    }
+
+    // Lấy cạnh của node (left/right/top/bottom center)
+    function getNodeEdge(id, side) {
+        const c = getNodeCenter(id);
+        if (!c) return null;
+        switch(side) {
+            case 'right': return { x: c.x + c.w/2, y: c.y };
+            case 'left': return { x: c.x - c.w/2, y: c.y };
+            case 'top': return { x: c.x, y: c.y - c.h/2 };
+            case 'bottom': return { x: c.x, y: c.y + c.h/2 };
+            default: return { x: c.x, y: c.y };
+        }
+    }
+
+    // Xác định hướng kết nối giữa 2 node
+    function getEdgePair(fromId, toId) {
+        const fc = getNodeCenter(fromId);
+        const tc = getNodeCenter(toId);
+        if (!fc || !tc) return null;
+        const dx = tc.x - fc.x;
+        const dy = tc.y - fc.y;
+
+        // Nếu gần như ngang ( bên trái)
+        if (Math.abs(dx) > Math.abs(dy) * 0.5) {
+            return {
+                from: getNodeEdge(fromId, dx > 0 ? 'right' : 'left'),
+                to: getNodeEdge(toId, dx > 0 ? 'left' : 'right')
+            };
+        }
+        // Nếu gần như dọc
+        return {
+            from: getNodeEdge(fromId, dy > 0 ? 'bottom' : 'top'),
+            to: getNodeEdge(toId, dy > 0 ? 'top' : 'bottom')
+        };
+    }
+
+    // Tạo bezier curve points
+    function getBezierPoints(p0, p3) {
+        const dx = p3.x - p0.x;
+        const dy = p3.y - p0.y;
+        const cp1 = { x: p0.x + dx * 0.45, y: p0.y };
+        const cp2 = { x: p3.x - dx * 0.45, y: p3.y };
+        return { p0, cp1, cp2, p3 };
+    }
+
+    // Interpolate trên bezier
+    function bezierPoint(t, p0, cp1, cp2, p3) {
+        const u = 1 - t;
+        return {
+            x: u*u*u*p0.x + 3*u*u*t*cp1.x + 3*u*t*t*cp2.x + t*t*t*p3.x,
+            y: u*u*u*p0.y + 3*u*u*t*cp1.y + 3*u*t*t*cp2.y + t*t*t*p3.y
+        };
+    }
+
+    // ========== PARTICLE SYSTEM ==========
+    function spawnParticles() {
+        particles = [];
+        const activeConns = connections.filter(c => c.scenarios.includes(currentScenario));
+
+        activeConns.forEach((conn, idx) => {
+            const edgePair = getEdgePair(conn.from, conn.to);
+            if (!edgePair) return;
+            const bez = getBezierPoints(edgePair.from, edgePair.to);
+
+            // Request particles (xanh lá)
+            for (let i = 0; i < 3; i++) {
+                particles.push({
+                    bez: bez,
+                    progress: -i * 0.25 - Math.random() * 0.1,
+                    speed: 0.004 + Math.random() * 0.002,
+                    color: '#00e5a0',
+                    type: 'request',
+                    size: 4,
+                    connIdx: idx
+                });
+            }
+            // Response particles (vàng) — đi ngược lại, delay hơn
+            for (let i = 0; i < 2; i++) {
+                particles.push({
+                    bez: { p0: bez.p3, cp1: bez.cp2, cp2: bez.cp1, p3: bez.p0 },
+                    progress: -i * 0.3 - 0.4 - Math.random() * 0.1,
+                    speed: 0.0035 + Math.random() * 0.002,
+                    color: '#f5a623',
+                    type: 'response',
+                    size: 3.5,
+                    connIdx: idx
+                });
+            }
+        });
+    }
+
+    function updateAndDrawParticles() {
+        const w = parseFloat(canvas.style.width);
+        const h = parseFloat(canvas.style.height);
+        ctx.clearRect(0, 0, w, h);
+
+        // Vẽ đường kết nối mờ
+        const activeConns = connections.filter(c => c.scenarios.includes(currentScenario));
+        activeConns.forEach(conn => {
+            const edgePair = getEdgePair(conn.from, conn.to);
+            if (!edgePair) return;
+            const bez = getBezierPoints(edgePair.from, edgePair.to);
+
+            ctx.beginPath();
+            ctx.moveTo(bez.p0.x, bez.p0.y);
+            ctx.bezierCurveTo(bez.cp1.x, bez.cp1.y, bez.cp2.x, bez.cp2.y, bez.p3.x, bez.p3.y);
+            ctx.strokeStyle = 'rgba(0,229,160,0.08)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Vẽ mũi tên ở giữa path
+            const mid = bezierPoint(0.5, bez.p0, bez.cp1, bez.cp2, bez.p3);
+            const ahead = bezierPoint(0.52, bez.p0, bez.cp1, bez.cp2, bez.p3);
+            const angle = Math.atan2(ahead.y - mid.y, ahead.x - mid.x);
+            ctx.save();
+            ctx.translate(mid.x, mid.y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(6, 0);
+            ctx.lineTo(-4, -4);
+            ctx.lineTo(-4, 4);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(0,229,160,0.15)';
+            ctx.fill();
+            ctx.restore();
+        });
+
+        // Cập nhật và vẽ particles
+        particles.forEach(p => {
+            p.progress += p.speed;
+            if (p.progress > 1.3) {
+                p.progress = -Math.random() * 0.4;
+            }
+            if (p.progress < 0 || p.progress > 1) return;
+
+            const pos = bezierPoint(p.progress, p.bez.p0, p.bez.cp1, p.bez.cp2, p.bez.p3);
+            const alpha = p.progress < 0.1 ? p.progress / 0.1 : (p.progress > 0.9 ? (1 - p.progress) / 0.1 : 1);
+
+            // Vẽ trail
+            for (let t = 1; t <= 5; t++) {
+                const tp = Math.max(0, p.progress - t * 0.015);
+                const tpos = bezierPoint(tp, p.bez.p0, p.bez.cp1, p.bez.cp2, p.bez.p3);
+                const ta = alpha * (1 - t / 6) * 0.3;
+                ctx.beginPath();
+                ctx.arc(tpos.x, tpos.y, p.size * (1 - t * 0.12), 0, Math.PI * 2);
+                ctx.fillStyle = p.color.replace(')', `,${ta})`).replace('rgb', 'rgba').replace('#', '');
+                // Chuyển hex sang rgba
+                const r = parseInt(p.color.slice(1,3),16);
+                const g = parseInt(p.color.slice(3,5),16);
+                const b = parseInt(p.color.slice(5,7),16);
+                ctx.fillStyle = `rgba(${r},${g},${b},${ta})`;
+                ctx.fill();
+            }
+
+            // Vẽ particle chính với glow
+            const r = parseInt(p.color.slice(1,3),16);
+            const g = parseInt(p.color.slice(3,5),16);
+            const b = parseInt(p.color.slice(5,7),16);
+
+            // Glow
+            const grad = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, p.size * 3);
+            grad.addColorStop(0, `rgba(${r},${g},${b},${alpha * 0.5})`);
+            grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, p.size * 3, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Core
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+            ctx.fill();
+
+            // White center
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, p.size * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${alpha * 0.8})`;
+            ctx.fill();
+        });
+    }
+
+    // ========== SCENARIO CONTROL ==========
+    function setScenario(scenario) {
+        currentScenario = scenario;
+
+        // Cập nhật buttons
+        document.querySelectorAll('.scenario-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.scenario === scenario);
+        });
+
+        // Cập nhật node states
+        const allNodeIds = ['tv1','tv2','tv3','admin-pc','vod-source','switch','proxy','guest-ui','admin-portal','backend','db','cache'];
+        const activeConns = connections.filter(c => c.scenarios.includes(scenario));
+        const activeNodeIds = new Set();
+        activeConns.forEach(c => { activeNodeIds.add(c.from); activeNodeIds.add(c.to); });
+
+        allNodeIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active', 'dimmed');
+            if (scenario === 'all') {
+                el.classList.add('active');
+            } else if (activeNodeIds.has(id)) {
+                el.classList.add('active');
+            } else {
+                el.classList.add('dimmed');
+            }
+        });
+
+        // Spawn particles mới
+        spawnParticles();
+
+        // Cập nhật step bar
+        renderSteps(scenario);
+
+        // Reset step highlight timer
+        resetStepHighlight();
+    }
+
+    function renderSteps(scenario) {
+        const bar = document.getElementById('step-bar');
+        const steps = scenarioSteps[scenario] || [];
+        bar.innerHTML = steps.map((s, i) => `
+            <div class="step-item" id="step-${i}">
+                <div class="step-num">${i + 1}</div>
+                <div class="step-text">${s.text}</div>
+            </div>
+        `).join('');
+    }
+
+    function resetStepHighlight() {
+        if (stepTimer) clearInterval(stepTimer);
+        stepHighlightIndex = 0;
+        const steps = scenarioSteps[currentScenario] || [];
+        if (steps.length === 0) return;
+
+        // Highlight bước đầu tiên
+        highlightStep(0);
+
+        stepTimer = setInterval(() => {
+            stepHighlightIndex = (stepHighlightIndex + 1) % steps.length;
+            highlightStep(stepHighlightIndex);
+        }, 2500);
+    }
+
+    function highlightStep(idx) {
+        const steps = scenarioSteps[currentScenario] || [];
+        steps.forEach((_, i) => {
+            const el = document.getElementById(`step-${i}`);
+            if (el) el.classList.toggle('highlight', i === idx);
+        });
+
+        // Highlight nodes tương ứng
+        const allNodeIds = ['tv1','tv2','tv3','admin-pc','vod-source','switch','proxy','guest-ui','admin-portal','backend','db','cache'];
+        const stepNodes = new Set(steps[idx]?.nodes || []);
+
+        allNodeIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el || el.classList.contains('dimmed')) return;
+            if (stepNodes.has(id)) {
+                el.style.boxShadow = '0 0 28px rgba(0,229,160,0.35), inset 0 0 16px rgba(0,229,160,0.08)';
+                el.style.borderColor = '#00e5a0';
+            } else if (currentScenario !== 'all') {
+                el.style.boxShadow = '';
+                el.style.borderColor = '';
+            }
+        });
+    }
+
+    // ========== INFO PANEL ==========
+    function showInfo(id) {
+        const data = componentData[id];
+        if (!data) return;
+
+        const panel = document.getElementById('info-panel');
+        const overlay = document.getElementById('overlay');
+        const content = document.getElementById('info-content');
+
+        content.innerHTML = `
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background: ${data.color}15; color: ${data.color};">
+                    <i class="${data.icon} text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base">${data.name}</h3>
+                    <div class="mono text-[10px] text-[#5a6a85] mt-0.5">${data.tech[0]}</div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="text-[10px] uppercase tracking-wider text-[#5a6a85] font-semibold mb-2">Vai trò</div>
+                <div class="info-tag" style="background: ${data.color}15; color: ${data.color};">${data.role}</div>
+            </div>
+
+            <div class="mb-4">
+                <div class="text-[10px] uppercase tracking-wider text-[#5a6a85] font-semibold mb-2">Mô tả</div>
+                <p class="text-[13px] leading-relaxed text-[#94a3b8]">${data.desc}</p>
+            </div>
+
+            <div class="mb-4">
+                <div class="text-[10px] uppercase tracking-wider text-[#5a6a85] font-semibold mb-2">Technology Stack</div>
+                <div class="flex flex-wrap gap-2">
+                    ${data.tech.map(t => `<span class="info-tag bg-[#111b2e] text-[#94a3b8] border border-[#1a2a48]">${t}</span>`).join('')}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="text-[10px] uppercase tracking-wider text-[#5a6a85] font-semibold mb-2">Chi tiết kỹ thuật</div>
+                <pre class="mono text-[10.5px] leading-relaxed text-[#94a3b8] bg-[#111b2e] border border-[#1a2a48] rounded-lg p-3 whitespace-pre-wrap">${data.detail}</pre>
+            </div>
+
+            <div>
+                <div class="text-[10px] uppercase tracking-wider text-[#5a6a85] font-semibold mb-2">Kết nối trong hệ thống</div>
+                <div class="space-y-1.5">
+                    ${connections.filter(c => c.from === id || c.to === id).map(c => {
+                        const otherId = c.from === id ? c.to : c.from;
+                        const otherData = componentData[otherId];
+                        const dir = c.from === id ? '→' : '←';
+                        return `<div class="flex items-center gap-2 text-[12px]">
+                            <span class="mono text-[#00e5a0]">${dir}</span>
+                            <span class="text-[#94a3b8]">${otherData?.name || otherId}</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+
+        panel.classList.add('open');
+        overlay.style.display = 'block';
+    }
+
+    function closeInfo() {
+        document.getElementById('info-panel').classList.remove('open');
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    // ========== ANIMATION LOOP ==========
+    function animate() {
+        updateAndDrawParticles();
+        animFrameId = requestAnimationFrame(animate);
+    }
+
+    // ========== INIT ==========
+    function init() {
+        resizeCanvas();
+        setScenario('guest');
+        animate();
+
+        // Resize handler
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                resizeCanvas();
+                spawnParticles();
+            }, 150);
+        });
+
+        // Keyboard: Escape đóng panel
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeInfo();
+        });
+    }
+
+    // Đợi DOM và fonts load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
+    } else {
+        setTimeout(init, 100);
+    }
+    </script>
+</body>
+</html>

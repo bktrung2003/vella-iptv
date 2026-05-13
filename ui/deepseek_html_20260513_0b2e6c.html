@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fusion Retreat Luxury | IPTV Hospitality Suite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/umd/lucide.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            color: #fff;
+        }
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            overflow: hidden;
+        }
+        .bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center 30%;
+            transition: opacity 1.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            opacity: 0;
+        }
+        .bg-layer.active { opacity: 1; }
+        .global-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 30%, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.75) 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            padding: 30px 60px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+        .screen.active {
+            display: flex;
+            animation: fadeSlideUp 0.55s ease-out forwards;
+        }
+        @keyframes fadeSlideUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .screen::-webkit-scrollbar { width: 5px; }
+        .screen::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .screen::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+        :root {
+            --primary: #c5a059;
+            --glass-bg: rgba(20, 20, 30, 0.55);
+            --glass-card: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.12);
+        }
+        /* Top bar with room number centered */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.3);
+            padding: 10px 24px;
+            border-radius: 80px;
+            border: 1px solid var(--glass-border);
+            position: relative;
+        }
+        .brand-logo {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--primary);
+            flex: 1;
+            text-align: left;
+        }
+        .room-center {
+            flex: 1;
+            text-align: center;
+            font-weight: 600;
+            font-size: 18px;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.9);
+            background: rgba(0,0,0,0.3);
+            padding: 4px 16px;
+            border-radius: 40px;
+            display: inline-block;
+            width: fit-content;
+            margin: 0 auto;
+        }
+        .right-widget {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            align-items: baseline;
+            gap: 15px;
+        }
+        .time-lg { font-size: 26px; font-weight: 700; }
+        .date-sm { font-size: 12px; opacity: 0.8; text-transform: uppercase; }
+        .weather-badge {
+            background: rgba(0,0,0,0.4);
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-size: 14px;
+        }
+        .action-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+            color: white;
+        }
+        .action-btn:hover {
+            background: var(--primary);
+            color: black;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .nav-actions {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        /* Welcome screen center (no room icon) */
+        .welcome-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin-top: -5vh;
+        }
+        .hero-greeting {
+            font-size: 72px;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+        .hero-greeting span { color: var(--primary); }
+        .lang-selector {
+            display: flex;
+            gap: 30px;
+            margin: 45px 0 30px;
+        }
+        .lang-btn {
+            background: rgba(0,0,0,0.55);
+            border: 1.5px solid var(--primary);
+            padding: 16px 44px;
+            border-radius: 60px;
+            font-size: 26px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+        }
+        .lang-btn:hover {
+            background: var(--primary);
+            color: black;
+            transform: scale(1.02);
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 26px;
+        }
+        .menu-card {
+            background: var(--glass-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+        .menu-card i { width: 48px; height: 48px; color: var(--primary); margin-bottom: 18px; }
+        .menu-card h3 { font-size: 22px; margin-bottom: 8px; }
+        .menu-card:hover {
+            background: rgba(197, 160, 89, 0.2);
+            border-color: var(--primary);
+            transform: translateY(-6px);
+        }
+        .section-title { font-size: 42px; font-weight: 700; margin-bottom: 12px; }
+        .section-desc { font-size: 15px; opacity: 0.7; margin-bottom: 35px; letter-spacing: 1px; }
+        .grid-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 26px;
+            margin-top: 20px;
+        }
+        .detail-card {
+            background: var(--glass-card);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 26px;
+            transition: 0.25s;
+            cursor: pointer;
+        }
+        .detail-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            background: rgba(255,255,255,0.12);
+        }
+        .price-tag { font-size: 20px; font-weight: 800; color: var(--primary); }
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 22px;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 16px;
+        }
+        .info-image {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            background: rgba(0,0,0,0.3);
+        }
+        .map-placeholder {
+            background: rgba(0,0,0,0.5);
+            border-radius: 24px;
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border: 1px dashed var(--primary);
+            flex-direction: column;
+        }
+        .channel-strip { display: flex; flex-wrap: wrap; gap: 15px; margin: 20px 0; }
+        .channel-card {
+            background: var(--glass-card);
+            border-radius: 20px;
+            padding: 14px 18px;
+            width: 150px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+        .footer-info {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 20px;
+        }
+        .qr-preview {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 20px;
+            border-radius: 40px;
+        }
+        .qr-code { width: 48px; height: 48px; background: white; border-radius: 12px; padding: 4px; }
+        #global-toast {
+            position: fixed;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: #000;
+            padding: 14px 40px;
+            border-radius: 50px;
+            font-weight: 800;
+            z-index: 2000;
+            display: none;
+            backdrop-filter: blur(12px);
+        }
+        @media (max-width: 1000px) {
+            .screen { padding: 20px 30px; }
+            .hero-greeting { font-size: 48px; }
+            .lang-btn { font-size: 20px; padding: 12px 28px; }
+            .room-center { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-container">
+    <!-- Background layers -->
+    <div id="bg-welcome" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=1920');"></div>
+    <div id="bg-dining" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1920');"></div>
+    <!-- Spa background: luxury spa, massage, candles -->
+    <div id="bg-spa" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=1920');"></div>
+    <div id="bg-info" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1920');"></div>
+    <div id="bg-tv" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1593784991095-a205069470b6?q=80&w=1920');"></div>
+    <div id="bg-live" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?q=80&w=1920');"></div>
+    <div id="bg-bill" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=1920');"></div>
+    <!-- Rotating backgrounds for main menu (resort views) -->
+    <div id="bg-menu-1" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1920');"></div>
+    <div id="bg-menu-2" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=1920');"></div>
+    <div id="bg-menu-3" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1920');"></div>
+    <div id="bg-menu-4" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1445019980597-93fa8acb246c?q=80&w=1920');"></div>
+</div>
+<div class="global-overlay"></div>
+<div id="global-toast">✔️ Action confirmed</div>
+
+<!-- WELCOME SCREEN (only QR, room number in top bar) -->
+<section id="screen-welcome" class="screen active">
+    <div class="top-bar">
+        <div class="brand-logo">FUSION RETREAT LUXURY</div>
+        <div class="room-center">Suite 1208</div>
+        <div class="right-widget">
+            <div><div class="time-lg" id="welcome-clock">--:--</div><div class="date-sm" id="welcome-date">---</div></div>
+            <div class="weather-badge">🌤️ 28°C</div>
+        </div>
+    </div>
+    <div class="welcome-container">
+        <div class="hero-greeting">Welcome,<br><span>Mr. Trung Bui</span></div>
+        <p style="font-size: 20px; margin: 30px 0 10px; opacity: 0.9;">Select language / Chọn ngôn ngữ</p>
+        <div class="lang-selector">
+            <button class="lang-btn" data-lang="en">EN ENGLISH</button>
+            <button class="lang-btn" data-lang="vi">🇻🇳 TIẾNG VIỆT</button>
+        </div>
+        <p style="margin-top: 50px; font-size: 14px; opacity: 0.6;">The ultimate IPTV experience • Fusion Retreat Luxury</p>
+    </div>
+    <div class="footer-info">
+        <div class="qr-preview">
+            <div class="qr-code"><img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://fusionretreat.com/guest" style="width:100%; border-radius:8px;"></div>
+            <span>Mobile remote & ordering</span>
+        </div>
+        <div style="color:#c5a059;">✈️ VN 601 • SGN - CXR • ON TIME</div>
+    </div>
+</section>
+
+<!-- MAIN MENU (room number also shown) -->
+<section id="screen-mainmenu" class="screen">
+    <div class="top-bar">
+        <div class="brand-logo">FUSION RETREAT LUXURY</div>
+        <div class="room-center">Suite 1208</div>
+        <div class="right-widget"><div class="time-lg" id="menu-clock">--:--</div><div class="date-sm" id="menu-date"></div></div>
+    </div>
+    <div class="nav-actions">
+        <button class="action-btn" id="backToWelcomeFromMenu"><i data-lucide="home"></i> HOME</button>
+        <button class="action-btn" id="helpBtn"><i data-lucide="headphones"></i> CONCIERGE</button>
+    </div>
+    <div class="section-title">Luxury Services</div>
+    <div class="section-desc">Your exclusive command center</div>
+    <div class="menu-grid">
+        <div class="menu-card" data-feature="dining"><i data-lucide="utensils"></i><h3>In-Room Dining</h3><p>24/7 Gastronomy</p></div>
+        <div class="menu-card" data-feature="spa"><i data-lucide="sparkles"></i><h3>Spa & Wellness</h3><p>Maia Spa Rituals</p></div>
+        <div class="menu-card" data-feature="info"><i data-lucide="map-pin"></i><h3>Resort Guide</h3><p>Map & Directory</p></div>
+        <div class="menu-card" data-feature="fusiontv"><i data-lucide="film"></i><h3>Fusion TV</h3><p>Promos & VOD</p></div>
+        <div class="menu-card" data-feature="livetv"><i data-lucide="tv"></i><h3>Live Television</h3><p>120+ Channels</p></div>
+        <div class="menu-card" data-feature="bill"><i data-lucide="receipt"></i><h3>My Folio</h3><p>Real-time charges</p></div>
+    </div>
+    <div class="footer-info">
+        <div style="font-size: 12px; opacity:0.7;">Fusion Retreat Luxury • IPTV 5.0</div>
+        <div style="font-size: 12px;">🔹 24h Butler Service</div>
+    </div>
+</section>
+
+<!-- IN-ROOM DINING -->
+<section id="screen-dining" class="screen">
+    <div class="top-bar">
+        <div class="brand-logo">✦ IN-ROOM DINING</div>
+        <div class="room-center">Suite 1208</div>
+        <div class="right-widget"><div class="time-lg" id="dining-clock"></div></div>
+    </div>
+    <div class="nav-actions"><button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button><button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button></div>
+    <div class="section-title" style="font-size: 38px;">Epicurean Journey</div>
+    <div class="grid-details">
+        <div class="detail-card" onclick="orderNotify('Wagyu Truffle Burger ordered')"><h3>Wagyu Truffle Burger</h3><p>Wagyu beef, truffle mayo, brioche.</p><div class="card-footer"><span class="price-tag">$ 28</span><span><i data-lucide="plus-circle"></i> Order</span></div></div>
+        <div class="detail-card" onclick="orderNotify('Fusion Pho Bo requested')"><h3>Fusion Pho Bo</h3><p>24h broth, brisket, herbs.</p><div class="card-footer"><span class="price-tag">$ 18</span><span><i data-lucide="plus-circle"></i> Order</span></div></div>
+        <div class="detail-card" onclick="orderNotify('Loch Fyne Salmon ordered')"><h3>Loch Fyne Salmon</h3><p>Pan-seared, lemon butter.</p><div class="card-footer"><span class="price-tag">$ 32</span><span><i data-lucide="plus-circle"></i> Order</span></div></div>
+    </div>
+    <div class="footer-info"><div style="font-size:12px;">Chef's special available until 11pm</div></div>
+</section>
+
+<!-- SPA & WELLNESS (spa background image updated) -->
+<section id="screen-spa" class="screen">
+    <div class="top-bar">
+        <div class="brand-logo">🌸 MAIA SPA</div>
+        <div class="room-center">Suite 1208</div>
+        <div class="right-widget"><div class="time-lg"></div></div>
+    </div>
+    <div class="nav-actions"><button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button><button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button></div>
+    <div class="section-title">Holistic Wellness</div>
+    <div class="section-desc">Ancient rituals, modern serenity</div>
+    <div class="grid-details">
+        <div class="detail-card" onclick="bookSpa('Fusion Signature Massage')"><h3>Fusion Signature Massage</h3><p>Deep tissue & energy balancing.</p><div class="card-footer"><span class="price-tag">$ 95 / 60min</span><span><i data-lucide="calendar"></i> Book</span></div></div>
+        <div class="detail-card" onclick="bookSpa('Natural Glow Facial')"><h3>Natural Glow Facial</h3><p>Organic lift & lymphatic drainage.</p><div class="card-footer"><span class="price-tag">$ 75 / 45min</span><span><i data-lucide="calendar"></i> Book</span></div></div>
+        <div class="detail-card" onclick="bookSpa('Ancient Salt Scrub')"><h3>Ancient Salt Scrub</h3><p>Local sea salts, aromatic oils.</p><div class="card-footer"><span class="price-tag">$ 65 / 45min</span><span><i data-lucide="calendar"></i> Book</span></div></div>
+    </div>
+    <div class="footer-info"><div style="font-size:12px;">Opening hours: 09:00 - 21:00</div></div>
+</section>
+
+<!-- RESORT GUIDE (rich info + images) -->
+<section id="screen-info" class="screen">
+    <div class="top-bar">
+        <div class="brand-logo">📍 RESORT GUIDE</div>
+        <div class="room-center">Suite 1208</div>
+        <div class="right-widget"></div>
+    </div>
+    <div class="nav-actions"><button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button><button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button></div>
+    <div class="grid-details">
+        <div class="detail-card" style="grid-column: span 2;"><h3>Interactive Map</h3><div class="map-placeholder"><i data-lucide="map" style="width:42px;height:42px;"></i><span>Main Pool • Villas • Restaurants • Spa</span><img src="https://images.unsplash.com/photo-1584132967330-8c2f34e6f5b4?q=80&w=400" style="width:100%; border-radius:12px; margin-top:10px; max-height:140px; object-fit:cover;" alt="map demo"></div></div>
+        <div class="detail-card"><h3>Facilities & Services</h3><p>🏊 Infinity Pool: 06:00 - 20:00<br>🍽️ The Main Restaurant: 06:30 - 22:30<br>💪 Fitness: 24/7<br>🌿 Maia Spa: 09:00 - 21:00<br>🍸 Sunset Bar: 16:00 - 23:00</p><img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=200" style="width:100%; border-radius:12px; margin-top:12px;"></div>
+        <div class="detail-card"><h3>Room Directory & VIP Services</h3><p>🔹 Guest Service: 0<br>🔹 Concierge: 1<br>🔹 In-Room Dining: 2<br>🔹 Housekeeping: 3<br>🔹 Butler: 4</p><div style="margin-top:16px; background:rgba(255,255,255,0.1); border-radius:12px; padding:8px; text-align:center;"><i data-lucide="clock"></i> 24h Butler on request</div></div>
+        <div class="detail-card"><h3>Nearby Attractions</h3><p>✨ Bai Dai Beach (2 min)<br>🏌️ Golf Club (5 min)<br>🏯 Po Nagar Towers (25 min)<br>🍜 Local street food tour available</p><div class="info-image" style="background:url('https://images.unsplash.com/photo-1559592413-7cec4b0cae2b?q=80&w=200') center/cover;"></div></div>
+    </div>
+    <div class="footer-info"><div style="font-size:12px;">Concierge desk: 24/7</div></div>
+</section>
+
+<!-- FUSION TV -->
+<section id="screen-fusiontv" class="screen">
+    <div class="top-bar">
+        <div class="brand-logo">🎬 FUSION DISCOVERY</div>
+        <div class="room-center">Suite 1208</div>
+        <div class="right-widget"></div>
+    </div>
+    <div class="nav-actions"><button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button><button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button></div>
+    <div class="section-title">Visual Storytelling</div>
+    <div class="detail-card" style="text-align:center;"><div style="background:#00000066; border-radius: 32px; padding: 55px 20px;"><i data-lucide="play-circle" style="width: 80px; height: 80px; color: var(--primary);"></i><h3>Fusion Retreat Luxury | Official Teaser</h3><button class="action-btn" style="margin-top: 20px; background:var(--primary); color:black;" onclick="showNotification('🎬 Playing premium brand content')">▶ WATCH NOW</button></div></div>
+    <div class="grid-details" style="margin-top: 25px;"><div class="detail-card"><h3>#FusionMoments</h3><p>Exclusive guest experiences</p></div><div class="detail-card"><h3>VOD Library</h3><p>400+ movies, series, concerts</p></div></div>
+    <div class="footer-info"><div style="font-size:12px;">Streaming in 4K HDR</div></div>
+</section>
+
+<!-- LIVE TV -->
+<section id="screen-livetv" class="screen">
+    <div class="top-bar">
+        <div class="brand-logo">📺 LIVE TV • 4K ULTRA HD</div>
+        <div class="room-center">Suite 1208</div>
+        <div class="right-widget"></div>
+    </div>
+    <div class="nav-actions"><button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button><button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button><button class="action-btn" onclick="showNotification('EPG Grid loading')"><i data-lucide="list"></i> EPG</button></div>
+    <div class="section-title">Now Playing: Live Channels</div>
+    <div class="channel-strip"><div class="channel-card" onclick="showNotification('CNN HD')"><i data-lucide="radio"></i><h4>CNN HD</h4></div><div class="channel-card" onclick="showNotification('HBO')"><i data-lucide="film"></i><h4>HBO</h4></div><div class="channel-card" onclick="showNotification('BBC Earth')"><i data-lucide="earth"></i><h4>BBC Earth</h4></div><div class="channel-card" onclick="showNotification('ESPN')"><i data-lucide="activity"></i><h4>ESPN</h4></div></div>
+    <div class="detail-card"><h3>Interactive EPG Highlights</h3><p>UEFA Champions League • Live Jazz at 9pm • Movie premiere: Dune 2</p></div>
+    <div class="footer-info"><div style="font-size:12px;">120+ international channels</div></div>
+</section>
+
+<!-- GUEST FOLIO -->
+<section id="screen-bill" class="screen">
+    <div class="top-bar">
+        <div class="brand-logo">🧾 GUEST FOLIO</div>
+        <div class="room-center">Suite 1208</div>
+        <div class="right-widget"></div>
+    </div>
+    <div class="nav-actions"><button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button><button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button></div>
+    <div class="section-title">Real-time Statement</div>
+    <div class="detail-card" style="max-width: 700px;"><div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.2);"><span>Accommodation (3 nights)</span><span>$ 1050</span></div><div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.2);"><span>In-Room Dining</span><span>$ 112</span></div><div style="display:flex; justify-content:space-between; padding:10px 0;"><span>Spa Treatments</span><span>$ 95</span></div><div style="display:flex; justify-content:space-between; padding:16px 0; font-size:28px; font-weight:800; color:var(--primary);"><span>Total Due</span><span>$ 1257</span></div><button class="action-btn" style="background:var(--primary); color:black; width:100%;" onclick="showNotification('Express checkout requested. Receipt emailed.')">EXPRESS CHECKOUT</button></div>
+    <div class="footer-info"><div style="font-size:12px;">Secure payment via room charge</div></div>
+</section>
+
+<script>
+    let currentLang = 'en';
+    function showNotification(msg) {
+        const toast = document.getElementById('global-toast');
+        toast.innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 2800);
+    }
+    function orderNotify(msg) { showNotification(`🍽️ ${msg}`); }
+    function bookSpa(treatment) {
+        showNotification(`✨ ${treatment} booking confirmed for Suite 1208. A spa concierge will call you shortly.`);
+    }
+    
+    function setBackground(screenId) {
+        const bgMap = {
+            'welcome': 'bg-welcome', 'mainmenu': null,
+            'dining': 'bg-dining', 'spa': 'bg-spa', 'info': 'bg-info',
+            'fusiontv': 'bg-tv', 'livetv': 'bg-live', 'bill': 'bg-bill'
+        };
+        if(screenId === 'mainmenu') {
+            startMenuBackgroundRotation();
+            return;
+        }
+        stopMenuRotation();
+        const bgId = bgMap[screenId] || 'bg-welcome';
+        document.querySelectorAll('.bg-layer').forEach(l => l.classList.remove('active'));
+        const target = document.getElementById(bgId);
+        if(target) target.classList.add('active');
+    }
+
+    let rotateInterval = null;
+    const menuBgIds = ['bg-menu-1', 'bg-menu-2', 'bg-menu-3', 'bg-menu-4'];
+    let currentBgIndex = 0;
+    function startMenuBackgroundRotation() {
+        if(rotateInterval) clearInterval(rotateInterval);
+        document.querySelectorAll('.bg-layer').forEach(l => l.classList.remove('active'));
+        document.getElementById(menuBgIds[0]).classList.add('active');
+        currentBgIndex = 0;
+        rotateInterval = setInterval(() => {
+            const next = (currentBgIndex + 1) % menuBgIds.length;
+            document.getElementById(menuBgIds[currentBgIndex]).classList.remove('active');
+            document.getElementById(menuBgIds[next]).classList.add('active');
+            currentBgIndex = next;
+        }, 7000);
+    }
+    function stopMenuRotation() {
+        if(rotateInterval) { clearInterval(rotateInterval); rotateInterval = null; }
+    }
+
+    function showScreen(screenName) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById(`screen-${screenName}`);
+        if(target) target.classList.add('active');
+        setBackground(screenName);
+        setTimeout(() => lucide.createIcons(), 30);
+    }
+
+    // Language buttons
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const lang = btn.getAttribute('data-lang');
+            currentLang = lang;
+            showNotification(`Language: ${lang === 'en' ? 'English' : 'Tiếng Việt'}`);
+            showScreen('mainmenu');
+        });
+    });
+    // Menu navigation
+    document.querySelectorAll('.menu-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const feat = card.getAttribute('data-feature');
+            if(feat === 'dining') showScreen('dining');
+            else if(feat === 'spa') showScreen('spa');
+            else if(feat === 'info') showScreen('info');
+            else if(feat === 'fusiontv') showScreen('fusiontv');
+            else if(feat === 'livetv') showScreen('livetv');
+            else if(feat === 'bill') showScreen('bill');
+        });
+    });
+    document.querySelectorAll('.back-to-main').forEach(btn => btn.addEventListener('click', () => showScreen('mainmenu')));
+    document.querySelectorAll('.back-welcome').forEach(btn => btn.addEventListener('click', () => showScreen('welcome')));
+    document.getElementById('backToWelcomeFromMenu')?.addEventListener('click', () => showScreen('welcome'));
+    document.getElementById('helpBtn')?.addEventListener('click', () => showNotification('Concierge will assist you immediately.'));
+
+    // Clock
+    function updateClocks() {
+        const now = new Date();
+        const t = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const d = now.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'}).toUpperCase();
+        document.querySelectorAll('.time-lg').forEach(el => { if(el) el.innerText = t; });
+        document.querySelectorAll('.date-sm, #welcome-date, #menu-date').forEach(el => { if(el) el.innerText = d; });
+    }
+    setInterval(updateClocks, 1000);
+    updateClocks();
+    lucide.createIcons();
+    document.getElementById('bg-welcome').classList.add('active');
+</script>
+</body>
+</html>

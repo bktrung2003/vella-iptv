@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Architecture Deep Dive: Fusion Hotel Group</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #e2e8f0; }
+        
+        .stack-box { transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
+        .stack-box:hover { border-color: rgba(52, 211, 153, 0.5); transform: translateY(-2px); }
+        
+        @keyframes pulse-line {
+            0% { stroke-dashoffset: 100; opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { stroke-dashoffset: 0; opacity: 0.3; }
+        }
+        .data-path { stroke-dasharray: 8; animation: pulse-line 3s linear infinite; }
+        
+        .layer-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
+        
+        .glow-emerald { box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
+        .glow-amber { box-shadow: 0 0 20px rgba(245, 158, 11, 0.2); }
+        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+    </style>
+</head>
+<body class="p-4 lg:p-10 flex flex-col items-center">
+
+    <div class="max-w-6xl w-full">
+        <!-- Header -->
+        <header class="mb-10 text-center">
+            <div class="inline-block px-3 py-1 border border-emerald-500/30 rounded-full text-[10px] text-emerald-400 font-bold mb-4 uppercase tracking-widest">
+                Fusion Hotel Group - Multi-Room Streaming Scenario
+            </div>
+            <h1 class="text-4xl font-extrabold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
+                HỆ THỐNG IPTV: KỊCH BẢN ĐA LUỒNG (MULTI-ROOM)
+            </h1>
+            <p class="text-slate-400 mt-2">Phân tích kỹ thuật IGMP Snooping & Multicast khi 3 phòng xem 3 kênh khác nhau</p>
+        </header>
+
+        <!-- Main Diagram Container -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- LEFT: System Stacks -->
+            <div class="lg:col-span-8 space-y-8">
+                
+                <!-- STACK 1: HEADEND SYSTEM (DVB-S2 to IP) -->
+                <div class="grid grid-cols-12 gap-4 items-center">
+                    <div class="col-span-3 text-right pr-4">
+                        <span class="layer-label">Signal Source</span>
+                        <h3 class="text-pink-500 font-bold">IPTV HEADEND</h3>
+                    </div>
+                    <div class="col-span-9 bg-slate-900/50 p-4 rounded-xl border border-pink-500/30 flex gap-2">
+                        <div class="flex-1 bg-pink-950/30 border border-pink-500/20 p-2 rounded text-center">
+                            <div class="text-pink-400 font-bold text-[10px]">STREAM A</div>
+                            <span class="text-[9px] text-slate-400">HBO HD (UDP: 239.1.1.1)</span>
+                        </div>
+                        <div class="flex-1 bg-pink-950/30 border border-pink-500/20 p-2 rounded text-center">
+                            <div class="text-pink-400 font-bold text-[10px]">STREAM B</div>
+                            <span class="text-[9px] text-slate-400">CNN (UDP: 239.1.1.2)</span>
+                        </div>
+                        <div class="flex-1 bg-pink-950/30 border border-pink-500/20 p-2 rounded text-center">
+                            <div class="text-pink-400 font-bold text-[10px]">STREAM C</div>
+                            <span class="text-[9px] text-slate-400">DISCOVERY (UDP: 239.1.1.3)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONNECTOR 1 -->
+                <div class="flex justify-center ml-[25%]">
+                    <svg width="60" height="40" viewBox="0 0 60 40">
+                        <path d="M 10 0 L 10 40" stroke="#ec4899" stroke-width="2" class="data-path" />
+                        <path d="M 30 0 L 30 40" stroke="#ec4899" stroke-width="2" class="data-path" />
+                        <path d="M 50 0 L 50 40" stroke="#ec4899" stroke-width="2" class="data-path" />
+                    </svg>
+                    <span class="text-[10px] text-pink-500 font-mono ml-2 mt-2">Multicast Traffic (constant bit rate)</span>
+                </div>
+
+                <!-- STACK 2: CORE SWITCH L3 -->
+                <div class="grid grid-cols-12 gap-4 items-center">
+                    <div class="col-span-3 text-right pr-4">
+                        <span class="layer-label">Traffic Distribution</span>
+                        <h3 class="text-blue-500 font-bold">CORE SWITCH</h3>
+                    </div>
+                    <div class="col-span-9 bg-slate-900/80 p-5 rounded-xl border border-blue-500/30 glow-blue space-y-3">
+                        <div class="bg-blue-900/20 border border-blue-500/20 p-2 rounded text-center text-[11px] font-bold text-blue-400 uppercase">
+                            IGMP Querier & Multicast Routing Table
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-[10px]">
+                            <div class="bg-slate-800 p-2 rounded border border-blue-700/50">
+                                <div class="text-blue-300 font-bold">Port 1 (Room 101)</div>
+                                <span class="text-slate-500">Subscribed: 239.1.1.1</span>
+                            </div>
+                            <div class="bg-slate-800 p-2 rounded border border-blue-700/50">
+                                <div class="text-blue-300 font-bold">Port 2 (Room 102)</div>
+                                <span class="text-slate-500">Subscribed: 239.1.1.2</span>
+                            </div>
+                            <div class="bg-slate-800 p-2 rounded border border-blue-700/50">
+                                <div class="text-blue-300 font-bold">Port 3 (Room 103)</div>
+                                <span class="text-slate-500">Subscribed: 239.1.1.3</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STACK 3: TRIPLE ROOM MOCKUP -->
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-3 text-right pr-4 pt-4">
+                        <span class="layer-label">End-Points</span>
+                        <h3 class="text-teal-400 font-bold uppercase">Guest Rooms</h3>
+                    </div>
+                    <div class="col-span-9 grid grid-cols-3 gap-4">
+                        
+                        <!-- Room 101 -->
+                        <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                            <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Phòng 101 (Mr. Trung)</div>
+                            <div class="bg-black aspect-video rounded border border-slate-600 flex items-center justify-center relative overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-t from-blue-900/50 to-transparent"></div>
+                                <span class="text-[10px] text-white font-bold z-10">HBO HD</span>
+                                <div class="absolute bottom-1 right-1 text-[8px] text-teal-400">10 Mbps</div>
+                            </div>
+                        </div>
+
+                        <!-- Room 102 -->
+                        <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                            <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Phòng 102 (Guest B)</div>
+                            <div class="bg-black aspect-video rounded border border-slate-600 flex items-center justify-center relative overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-t from-red-900/50 to-transparent"></div>
+                                <span class="text-[10px] text-white font-bold z-10">CNN NEWS</span>
+                                <div class="absolute bottom-1 right-1 text-[8px] text-teal-400">4 Mbps</div>
+                            </div>
+                        </div>
+
+                        <!-- Room 103 -->
+                        <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                            <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Phòng 103 (Guest C)</div>
+                            <div class="bg-black aspect-video rounded border border-slate-600 flex items-center justify-center relative overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-t from-emerald-900/50 to-transparent"></div>
+                                <span class="text-[10px] text-white font-bold z-10">DISCOVERY</span>
+                                <div class="absolute bottom-1 right-1 text-[8px] text-teal-400">8 Mbps</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT: Step-by-Step Detail -->
+            <div class="lg:col-span-4 sticky top-10">
+                <div class="bg-slate-900/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-md">
+                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                        <span class="w-2 h-6 bg-pink-500 rounded-full"></span>
+                        Cơ chế Đa luồng (Multicast)
+                    </h2>
+
+                    <div class="space-y-6">
+                        <!-- Detail 1 -->
+                        <div class="relative pl-8 before:absolute before:left-[11px] before:top-8 before:bottom-[-24px] before:w-0.5 before:bg-slate-700 last:before:hidden">
+                            <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-pink-500 flex items-center justify-center text-xs font-bold text-black">1</div>
+                            <h4 class="text-pink-500 font-bold text-sm uppercase">Headend Broadcast</h4>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Hệ thống Headend nhận tín hiệu vệ tinh và chuyển đổi thành các luồng IP Multicast. Ví dụ: HBO được gán IP <code>239.1.1.1</code>. Luồng này luôn tồn tại trên mạng Core.
+                            </p>
+                        </div>
+
+                        <!-- Detail 2 -->
+                        <div class="relative pl-8 before:absolute before:left-[11px] before:top-8 before:bottom-[-24px] before:w-0.5 before:bg-slate-700 last:before:hidden">
+                            <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold text-black">2</div>
+                            <h4 class="text-blue-500 font-bold text-sm uppercase">IGMP Report (The "Join")</h4>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Khi anh Trung (P.101) chọn HBO, TV gửi bản tin <strong>IGMP Join</strong> tới Switch. Switch ghi chú: "Cổng số 1 cần nhận dữ liệu từ nhóm 239.1.1.1".
+                            </p>
+                        </div>
+
+                        <!-- Detail 3 -->
+                        <div class="relative pl-8 before:absolute before:left-[11px] before:top-8 before:bottom-[-24px] before:w-0.5 before:bg-slate-700 last:before:hidden">
+                            <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-bold text-black">3</div>
+                            <h4 class="text-emerald-500 font-bold text-sm uppercase">Smart Distribution</h4>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Nếu P.102 cũng mở HBO, Switch **không** nhân đôi traffic từ Headend. Nó chỉ đơn giản là copy luồng dữ liệu hiện có sang thêm Cổng số 2. Điều này tiết kiệm băng thông cực lớn.
+                            </p>
+                        </div>
+
+                        <!-- Detail 4 -->
+                        <div class="relative pl-8">
+                            <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-teal-400 flex items-center justify-center text-xs font-bold text-black">4</div>
+                            <h4 class="text-teal-400 font-bold text-sm uppercase">Independent Viewing</h4>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Vì mỗi phòng là một Cổng vật lý/VLAN riêng biệt trên Switch, 3 phòng có thể xem 3 kênh hoàn toàn khác nhau mà không gây nhiễu hoặc chiếm dụng băng thông của nhau.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Tech Legend -->
+                    <div class="mt-10 pt-6 border-t border-slate-800">
+                        <h5 class="text-[10px] font-bold text-slate-500 uppercase mb-3">Thông số Kỹ thuật Phân phối</h5>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-0.5 bg-slate-800 text-pink-400 text-[10px] rounded border border-pink-900">Multicast UDP</span>
+                            <span class="px-2 py-0.5 bg-slate-800 text-blue-400 text-[10px] rounded border border-blue-900">IGMP Snooping v3</span>
+                            <span class="px-2 py-0.5 bg-slate-800 text-teal-400 text-[10px] rounded border border-teal-900">MVR (Multicast VLAN)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

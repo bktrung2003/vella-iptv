@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fusion IPTV | Executive Suite - Luxury Hospitality Solution</title>
+    <!-- Google Fonts + Lucide Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/umd/lucide.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            color: #fff;
+        }
+
+        /* --- MULTI-LAYER BACKGROUND ENGINE (Enhanced) --- */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            overflow: hidden;
+        }
+        .bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center 30%;
+            transition: opacity 1.2s cubic-bezier(0.2, 0.9, 0.4, 1.1), transform 1.5s ease-out;
+            opacity: 0;
+            transform: scale(1.08);
+        }
+        .bg-layer.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .global-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.75) 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- SCREENS & TRANSITIONS --- */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            padding: 40px 60px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+        .screen.active {
+            display: flex;
+            animation: fadeSlideUp 0.55s ease-out forwards;
+        }
+        @keyframes fadeSlideUp {
+            0% { opacity: 0; transform: translateY(22px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom scroll */
+        .screen::-webkit-scrollbar {
+            width: 5px;
+        }
+        .screen::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        .screen::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        /* --- DESIGN SYSTEM (Gold / Glass) --- */
+        :root {
+            --primary: #c5a059;
+            --primary-glow: rgba(197, 160, 89, 0.4);
+            --glass-bg: rgba(20, 20, 30, 0.55);
+            --glass-card: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --text-dim: rgba(255,255,255,0.7);
+        }
+
+        /* Top Bar Widgets (Time, Weather, Guest) */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+            flex-wrap: wrap;
+            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.25);
+            padding: 12px 24px;
+            border-radius: 80px;
+            border: 1px solid var(--glass-border);
+        }
+        .brand-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-logo {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: var(--primary);
+        }
+        .guest-badge {
+            background: var(--glass-card);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .widget-group {
+            display: flex;
+            gap: 28px;
+            align-items: baseline;
+        }
+        .widget {
+            text-align: right;
+        }
+        .time-lg {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: 1px;
+        }
+        .date-sm {
+            font-size: 13px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        /* Buttons & navigation */
+        .nav-actions {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            padding: 10px 22px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.25s ease;
+            font-size: 14px;
+        }
+        .action-btn i {
+            width: 18px;
+            height: 18px;
+        }
+        .action-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #000;
+            transform: translateY(-2px);
+        }
+
+        /* TYPOGRAPHY */
+        .hero-greeting {
+            font-size: 68px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+        .hero-greeting span {
+            color: var(--primary);
+        }
+        .section-title {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .section-desc {
+            font-size: 16px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+        }
+
+        /* GRID CARDS (main menu + details) */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 26px;
+            margin-top: 15px;
+        }
+        .menu-card {
+            background: var(--glass-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        .menu-card i {
+            width: 48px;
+            height: 48px;
+            stroke-width: 1.5;
+            color: var(--primary);
+            margin-bottom: 22px;
+        }
+        .menu-card h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+        .menu-card p {
+            font-size: 13px;
+            opacity: 0.7;
+        }
+        .menu-card:hover {
+            background: rgba(197, 160, 89, 0.2);
+            border-color: var(--primary);
+            transform: translateY(-8px);
+        }
+
+        /* Detail Cards (restaurant / spa) */
+        .grid-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 26px;
+            margin-top: 20px;
+        }
+        .detail-card {
+            background: var(--glass-card);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 26px;
+            transition: 0.25s;
+            cursor: pointer;
+        }
+        .detail-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.12);
+        }
+        .detail-card h3 {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+        .price-tag {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 22px;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 18px;
+        }
+        .order-icon {
+            color: var(--primary);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        /* Map placeholder, live tv channels styling */
+        .map-placeholder {
+            background: rgba(0,0,0,0.5);
+            border-radius: 24px;
+            height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed var(--primary);
+            flex-direction: column;
+            gap: 12px;
+        }
+        .channel-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .channel-card {
+            background: var(--glass-card);
+            border-radius: 20px;
+            padding: 16px 20px;
+            width: 160px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* QR & footer */
+        .footer-info {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 28px;
+        }
+        .qr-preview {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            background: rgba(0,0,0,0.4);
+            padding: 10px 20px;
+            border-radius: 40px;
+        }
+        .qr-code {
+            width: 52px;
+            height: 52px;
+            background: white;
+            border-radius: 12px;
+            padding: 6px;
+        }
+        .flight-status {
+            font-weight: 600;
+            color: #a3e635;
+        }
+
+        /* Notify toast */
+        #global-toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: #000;
+            padding: 16px 40px;
+            border-radius: 60px;
+            font-weight: 800;
+            z-index: 2000;
+            display: none;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 35px rgba(0,0,0,0.3);
+            font-size: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 1000px) {
+            .screen { padding: 30px 30px; }
+            .hero-greeting { font-size: 48px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-container">
+    <!-- Different background scenes -->
+    <div id="bg-welcome" class="bg-layer active" style="background-image: url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=1920');"></div>
+    <div id="bg-dining" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1920');"></div>
+    <div id="bg-spa" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1544161515-4ae6ce6db87e?q=80&w=1920');"></div>
+    <div id="bg-info" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1920');"></div>
+    <div id="bg-tv" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1593784991095-a205069470b6?q=80&w=1920');"></div>
+    <div id="bg-live" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?q=80&w=1920');"></div>
+    <div id="bg-bill" class="bg-layer" style="background-image: url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=1920');"></div>
+</div>
+<div class="global-overlay"></div>
+
+<div id="global-toast">✔️ Action confirmed</div>
+
+<!-- ================= SCREENS ================= -->
+
+<!-- 1. WELCOME SCREEN (Guest Landing) -->
+<section id="screen-welcome" class="screen active">
+    <div class="top-bar">
+        <div class="brand-area">
+            <div class="brand-logo">✦ FUSION IPTV</div>
+            <div class="guest-badge">Group Director Suite</div>
+        </div>
+        <div class="widget-group">
+            <div class="widget">
+                <div class="time-lg" id="welcome-clock">--:--</div>
+                <div class="date-sm" id="welcome-date">---</div>
+            </div>
+            <div class="widget">
+                <div class="time-lg">🌤️ 28°C</div>
+                <div class="date-sm">Ho Chi Minh City</div>
+            </div>
+        </div>
+    </div>
+    <div style="margin-top: 12vh; max-width: 800px;">
+        <div class="hero-greeting">Welcome,<br><span>Mr. Trung Bui</span></div>
+        <p style="font-size: 22px; margin-bottom: 48px; opacity: 0.85; line-height: 1.4;">Next-generation IPTV experience • Hyper-personalized hospitality</p>
+        <button class="action-btn" id="enterMainMenuBtn" style="background: var(--primary); color:#000; padding: 18px 48px; font-size: 18px; font-weight: 800;">
+            <i data-lucide="arrow-right-circle"></i> ENTER SUITE MENU
+        </button>
+    </div>
+    <div class="footer-info">
+        <div class="qr-preview">
+            <div class="qr-code"><img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://fusionlifestyle.com/guest" style="width:100%; border-radius: 8px;" alt="qr"></div>
+            <div style="font-size: 13px;">Mobile remote & ordering</div>
+        </div>
+        <div class="flight-status">✈️ VN 601 • SGN to BKK • ON TIME</div>
+    </div>
+</section>
+
+<!-- 2. MAIN MENU (FULL FEATURE HUB) -->
+<section id="screen-mainmenu" class="screen">
+    <div class="top-bar">
+        <div class="brand-area"><div class="brand-logo">FUSION | COMMAND CENTER</div></div>
+        <div class="widget-group">
+            <div class="widget"><div class="time-lg" id="menu-clock">--:--</div><div class="date-sm" id="menu-date">MAY 13, 2026</div></div>
+        </div>
+    </div>
+    <div class="nav-actions">
+        <button class="action-btn" id="backToWelcomeFromMenu"><i data-lucide="home"></i> HOME</button>
+        <button class="action-btn" id="dummyHelpBtn" onclick="showNotification('Concierge assistance requested')"><i data-lucide="headphones"></i> GUEST SERVICE</button>
+    </div>
+    <div class="section-title">Luxury Services</div>
+    <div class="section-desc">Explore intuitive IPTV solutions – every detail, one touch away</div>
+    
+    <div class="menu-grid">
+        <div class="menu-card" data-feature="dining"><i data-lucide="utensils"></i><h3>In-Room Dining</h3><p>24/7 gourmet selection</p></div>
+        <div class="menu-card" data-feature="spa"><i data-lucide="sparkles"></i><h3>Spa & Wellness</h3><p>Maia Spa rituals</p></div>
+        <div class="menu-card" data-feature="info"><i data-lucide="map-pin"></i><h3>Hotel Guide</h3><p>Map & directory</p></div>
+        <div class="menu-card" data-feature="fusiontv"><i data-lucide="film"></i><h3>Fusion TV</h3><p>Promos & VOD</p></div>
+        <div class="menu-card" data-feature="livetv"><i data-lucide="tv"></i><h3>Live Television</h3><p>110+ Channels / EPG</p></div>
+        <div class="menu-card" data-feature="bill"><i data-lucide="receipt"></i><h3>My Folio</h3><p>Real-time charges</p></div>
+    </div>
+    <div class="footer-info" style="margin-top: 55px;">
+        <div class="qr-preview"><i data-lucide="smartphone"></i><span>Scan to pair device</span></div>
+        <div class="flight-status">🔹 Fusion Resort Cam Ranh • Premium IPTV v3.0</div>
+    </div>
+</section>
+
+<!-- 3. IN-ROOM DINING DETAILS -->
+<section id="screen-dining" class="screen">
+    <div class="top-bar"><div class="brand-logo">✦ IN-ROOM DINING</div><div class="widget"><div class="time-lg" id="dining-clock"></div></div></div>
+    <div class="nav-actions">
+        <button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button>
+        <button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button>
+    </div>
+    <div class="section-title" style="font-size: 38px;">Epicurean Journey</div>
+    <div class="section-desc">Signature dishes prepared by Michelin-starred kitchen</div>
+    <div class="grid-details">
+        <div class="detail-card" onclick="orderNotify('Wagyu Truffle Burger + Sides ordered')"><h3>Wagyu Truffle Burger</h3><p>Australian wagyu, black truffle mayo, brioche.</p><div class="card-footer"><span class="price-tag">$ 28.00</span><span class="order-icon"><i data-lucide="plus-circle"></i> Order</span></div></div>
+        <div class="detail-card" onclick="orderNotify('Fusion Pho Bo 24h requested')"><h3>Fusion Pho Bo</h3><p>Slow-cooked broth, premium brisket, herbs.</p><div class="card-footer"><span class="price-tag">$ 18.00</span><span class="order-icon"><i data-lucide="plus-circle"></i> Order</span></div></div>
+        <div class="detail-card" onclick="orderNotify('Loch Fyne Salmon ordered')"><h3>Loch Fyne Salmon</h3><p>Pan-seared, lemon butter, seasonal veg.</p><div class="card-footer"><span class="price-tag">$ 32.00</span><span class="order-icon"><i data-lucide="plus-circle"></i> Order</span></div></div>
+        <div class="detail-card" onclick="orderNotify('Dessert Trio delivered to room')"><h3>Passion Delight</h3><p>Mango sticky rice, crème brûlée, chocolate fondant.</p><div class="card-footer"><span class="price-tag">$ 14.00</span><span class="order-icon"><i data-lucide="plus-circle"></i> Order</span></div></div>
+    </div>
+</section>
+
+<!-- 4. SPA & WELLNESS DETAILS -->
+<section id="screen-spa" class="screen">
+    <div class="top-bar"><div class="brand-logo">🌸 MAIA SPA</div><div class="widget"><div class="time-lg"></div></div></div>
+    <div class="nav-actions">
+        <button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button>
+        <button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button>
+    </div>
+    <div class="section-title">Holistic Wellness</div>
+    <div class="section-desc">Ancient techniques, modern serenity</div>
+    <div class="grid-details">
+        <div class="detail-card" onclick="orderNotify('Signature Massage booking request sent')"><h3>Fusion Signature Massage</h3><p>Balancing energy, deep tissue fusion.</p><div class="card-footer"><span class="price-tag">$ 95 / 60min</span><span class="order-icon"><i data-lucide="calendar"></i> Book</span></div></div>
+        <div class="detail-card" onclick="orderNotify('Facial appointment confirmed')"><h3>Natural Glow Facial</h3><p>Organic lift & lymphatic drainage.</p><div class="card-footer"><span class="price-tag">$ 75 / 45min</span><span class="order-icon"><i data-lucide="calendar"></i> Book</span></div></div>
+        <div class="detail-card" onclick="orderNotify('Salt scrub added to itinerary')"><h3>Ancient Salt Scrub</h3><p>Local sea salt, aromatic oils.</p><div class="card-footer"><span class="price-tag">$ 65 / 45min</span><span class="order-icon"><i data-lucide="calendar"></i> Book</span></div></div>
+    </div>
+</section>
+
+<!-- 5. HOTEL INFO (MAP, DIRECTORY) -->
+<section id="screen-info" class="screen">
+    <div class="top-bar"><div class="brand-logo">📍 RESORT GUIDE</div></div>
+    <div class="nav-actions">
+        <button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button>
+        <button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button>
+    </div>
+    <div class="grid-details">
+        <div class="detail-card" style="grid-column: span 2;"><h3>Interactive Resort Map</h3><div class="map-placeholder"><i data-lucide="map" style="width:48px;height:48px;opacity:0.7;"></i><span>Satellite view • Pools, villas, dining hubs</span></div></div>
+        <div class="detail-card"><h3>Service Hours</h3><p>Main Restaurant: 06:30 – 22:30<br>Infinity Pool: 06:00 – 20:00<br>Fitness: 24/7<br>Maia Spa: 09:00 – 21:00</p></div>
+        <div class="detail-card"><h3>Room Directory</h3><p>🔹 Guest Service: 0<br>🔹 Spa Concierge: 1<br>🔹 In-Room Dining: 2<br>🔹 Housekeeping: 3</p></div>
+    </div>
+</section>
+
+<!-- 6. FUSION TV (Brand & Promo Video) -->
+<section id="screen-fusiontv" class="screen">
+    <div class="top-bar"><div class="brand-logo">🎬 FUSION DISCOVERY</div></div>
+    <div class="nav-actions">
+        <button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button>
+        <button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button>
+    </div>
+    <div class="section-title">Visual Storytelling</div>
+    <div class="section-desc">Signature experiences, cinematic journeys</div>
+    <div class="detail-card" style="padding: 12px; text-align:center; backdrop-filter:blur(30px);">
+        <div style="background:#00000066; border-radius: 32px; padding: 60px 20px; border:1px solid var(--glass-border);">
+            <i data-lucide="play-circle" style="width: 80px; height: 80px; color: var(--primary);"></i>
+            <h3 style="margin-top: 15px;">Fusion Cam Ranh | Official teaser 2026</h3>
+            <p style="margin-top: 12px;">Immerse in pure luxury – click to preview (demo mode)</p>
+            <button class="action-btn" style="margin-top: 24px; background: var(--primary); color:black;" onclick="showNotification('🎥 Playing branded content: Fusion Resort Collection')">▶️ WATCH PROMO</button>
+        </div>
+    </div>
+    <div class="grid-details" style="margin-top: 30px;">
+        <div class="detail-card"><h3>#FusionMoments</h3><p>Guest curated reels & exclusive offers</p></div>
+        <div class="detail-card"><h3>VOD Library</h3><p>300+ movies, series, concerts</p></div>
+    </div>
+</section>
+
+<!-- 7. LIVE TELEVISION (IPTV Core) -->
+<section id="screen-livetv" class="screen">
+    <div class="top-bar"><div class="brand-logo">📺 LIVE TV • 4K ULTRA HD</div></div>
+    <div class="nav-actions">
+        <button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button>
+        <button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button>
+        <button class="action-btn" onclick="showNotification('Electronic Program Guide loading...')"><i data-lucide="list"></i> EPG GRID</button>
+    </div>
+    <div class="section-title">Now Playing: Live Channels</div>
+    <div class="channel-strip">
+        <div class="channel-card" onclick="showNotification('Switching to CNN International HD')"><i data-lucide="radio"></i><h4>CNN HD</h4><p>Newsroom</p></div>
+        <div class="channel-card" onclick="showNotification('HBO Signature ▶️')"><i data-lucide="film"></i><h4>HBO</h4><p>Dune: Prophecy</p></div>
+        <div class="channel-card" onclick="showNotification('BBC Earth streaming')"><i data-lucide="earth"></i><h4>BBC Earth</h4><p>Planet III</p></div>
+        <div class="channel-card" onclick="showNotification('ESPN live: Golf')"><i data-lucide="activity"></i><h4>ESPN</h4><p>Live Sports</p></div>
+        <div class="channel-card" onclick="showNotification('Fusion Resort Channel')"><i data-lucide="tv-2"></i><h4>Fusion CH</h4><p>Hotel info</p></div>
+    </div>
+    <div class="detail-card"><h3>Interactive EPG Highlights</h3><p>Monday 13 May: UEFA Champions League replay, Live Jazz from Lobby Lounge 9pm. <span style="color:var(--primary);">Request recording</span></p></div>
+</section>
+
+<!-- 8. MY BILL / FOLIO -->
+<section id="screen-bill" class="screen">
+    <div class="top-bar"><div class="brand-logo">🧾 GUEST FOLIO</div></div>
+    <div class="nav-actions">
+        <button class="action-btn back-to-main"><i data-lucide="layout-grid"></i> BACK TO MENU</button>
+        <button class="action-btn back-welcome"><i data-lucide="home"></i> HOME</button>
+    </div>
+    <div class="section-title">Real-time Statement</div>
+    <div class="detail-card" style="max-width: 700px;">
+        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.2);"><span>Accommodation (3 nights)</span><span>$ 750.00</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.2);"><span>In-Room Dining</span><span>$ 87.00</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.2);"><span>Spa Treatment</span><span>$ 95.00</span></div>
+        <div style="display: flex; justify-content: space-between; padding: 16px 0; font-size: 28px; font-weight: 800; color: var(--primary);"><span>Total Balance</span><span>$ 932.00</span></div>
+        <button class="action-btn" style="background: var(--primary); color: black; width:100%; justify-content:center;" onclick="showNotification('✅ Express checkout requested. Receipt sent via email.')">EXPRESS CHECKOUT</button>
+    </div>
+</section>
+
+<script>
+    // --- UTILITIES ---
+    lucide.createIcons();
+
+    function showNotification(msg) {
+        const toast = document.getElementById('global-toast');
+        toast.innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 2800);
+    }
+    function orderNotify(msg) { showNotification(`🍽️ ${msg}`); }
+
+    // Background switcher based on screen
+    function setBackgroundByScreen(screenId) {
+        const bgMap = {
+            'welcome': 'bg-welcome',
+            'mainmenu': 'bg-welcome',
+            'dining': 'bg-dining',
+            'spa': 'bg-spa',
+            'info': 'bg-info',
+            'fusiontv': 'bg-tv',
+            'livetv': 'bg-live',
+            'bill': 'bg-bill'
+        };
+        const bgId = bgMap[screenId] || 'bg-welcome';
+        document.querySelectorAll('.bg-layer').forEach(layer => layer.classList.remove('active'));
+        const targetBg = document.getElementById(bgId);
+        if(targetBg) targetBg.classList.add('active');
+    }
+
+    function showScreen(screenName) {
+        // Hide all screens
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const targetScreen = document.getElementById(`screen-${screenName}`);
+        if(targetScreen) {
+            targetScreen.classList.add('active');
+            setBackgroundByScreen(screenName);
+            // refresh icons inside newly active screen (if needed)
+            setTimeout(() => lucide.createIcons(), 50);
+        } else {
+            console.warn(`screen ${screenName} not found`);
+        }
+    }
+
+    // Event Bindings
+    document.getElementById('enterMainMenuBtn')?.addEventListener('click', () => showScreen('mainmenu'));
+    document.getElementById('backToWelcomeFromMenu')?.addEventListener('click', () => showScreen('welcome'));
+    
+    // main menu feature cards
+    const featureCards = document.querySelectorAll('.menu-card');
+    featureCards.forEach(card => {
+        card.addEventListener('click', (e) => {
+            const feature = card.getAttribute('data-feature');
+            if(feature === 'dining') showScreen('dining');
+            else if(feature === 'spa') showScreen('spa');
+            else if(feature === 'info') showScreen('info');
+            else if(feature === 'fusiontv') showScreen('fusiontv');
+            else if(feature === 'livetv') showScreen('livetv');
+            else if(feature === 'bill') showScreen('bill');
+        });
+    });
+    
+    // Back buttons (to main menu) and home (welcome) inside detail screens using classes
+    document.querySelectorAll('.back-to-main').forEach(btn => {
+        btn.addEventListener('click', () => showScreen('mainmenu'));
+    });
+    document.querySelectorAll('.back-welcome').forEach(btn => {
+        btn.addEventListener('click', () => showScreen('welcome'));
+    });
+    
+    // additionally any dynamic reloaded icons after screen change (call lucide again)
+    function refreshIconsOnMutation() {
+        const observer = new MutationObserver(() => lucide.createIcons());
+        observer.observe(document.body, { subtree: true, childList: true });
+    }
+    refreshIconsOnMutation();
+    
+    // Clock update for all screens
+    function updateClocks() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+        const clockElements = document.querySelectorAll('.time-lg');
+        clockElements.forEach(el => { if(el) el.innerText = timeStr; });
+        const dateElements = document.querySelectorAll('.date-sm, #welcome-date, #menu-date');
+        dateElements.forEach(el => { if(el && el.id !== 'welcome-date') el.innerText = dateStr; });
+        const welcomeDate = document.getElementById('welcome-date');
+        if(welcomeDate) welcomeDate.innerText = dateStr;
+    }
+    setInterval(updateClocks, 1000);
+    updateClocks();
+    
+    // attach fallback for any missing manual bind
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        if(btn.id === 'dummyHelpBtn') return;
+    });
+    // Additional to ensure back actions consistent, also remove potential overwrites.
+    if(document.getElementById('backToWelcomeFromMenu')) {
+        // already added
+    }
+    // Hotfix for fallback bind
+    window.showScreen = showScreen; // for debugging
+    window.showNotification = showNotification;
+    // Ensure main menu default entrance, but welcome screen is active.
+    console.log("Fusion IPTV Dashboard loaded - GM Mockup Ready");
+</script>
+</body>
+</html>

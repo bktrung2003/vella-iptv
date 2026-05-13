@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3 Kịch bản cốt lõi - Hotel IPTV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+        }
+
+        /* Animations for data flow */
+        @keyframes flow-stream {
+            from { stroke-dashoffset: 40; }
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes flow-api {
+            from { stroke-dashoffset: 20; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        .path-stream {
+            stroke-dasharray: 10 10;
+            animation: flow-stream 1s linear infinite;
+        }
+
+        .path-api {
+            stroke-dasharray: 5 5;
+            animation: flow-api 1.5s linear infinite;
+        }
+
+        /* Smooth transitions */
+        .node, .flow-line {
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* Custom scrollbar for info box */
+        .info-scroll::-webkit-scrollbar { width: 6px; }
+        .info-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .info-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col items-center justify-center">
+
+    <div class="max-w-6xl w-full bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+        
+        <!-- Header & Controls -->
+        <div class="p-6 border-b border-slate-700 bg-slate-800/50">
+            <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent mb-4">
+                3 Kịch bản thực tế: Check-in, Xem TV & Xem Bill
+            </h2>
+            <div class="flex flex-wrap gap-2" id="btn-container">
+                <!-- Buttons injected via JS -->
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-0">
+            
+            <!-- SVG Diagram -->
+            <div class="lg:col-span-2 p-6 bg-slate-900 flex items-center justify-center relative overflow-hidden" style="min-height: 500px;">
+                <svg viewBox="0 0 800 500" class="w-full h-full max-w-full drop-shadow-lg">
+                    <defs>
+                        <!-- Arrow markers -->
+                        <marker id="arrow-stream" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                        </marker>
+                        <marker id="arrow-api" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+                        </marker>
+                        
+                        <!-- Gradients -->
+                        <linearGradient id="grad-video" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#2563eb" />
+                            <stop offset="100%" stop-color="#3b82f6" />
+                        </linearGradient>
+                        <linearGradient id="grad-server" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#059669" />
+                            <stop offset="100%" stop-color="#10b981" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- ================= PATHS (LINES) ================= -->
+                    <!-- Note: Drawn first so they appear behind nodes -->
+
+                    <!-- 1. Stream: Headend to Switch -->
+                    <path id="path-vlc-sw" class="flow-line path-stream" d="M 180 150 L 320 250" fill="none" stroke="#3b82f6" stroke-width="4" marker-end="url(#arrow-stream)" />
+                    
+                    <!-- 2. Stream: Switch to TVs -->
+                    <path id="path-sw-tv" class="flow-line path-stream" d="M 480 250 C 550 250, 600 150, 650 150 M 480 250 L 650 250 M 480 250 C 550 250, 600 350, 650 350" fill="none" stroke="#3b82f6" stroke-width="3" opacity="0.2" />
+
+                    <!-- 3. API: TV <-> Switch <-> Backend -->
+                    <path id="path-tv-api" class="flow-line path-api" d="M 650 160 C 600 160, 550 260, 480 260 M 650 260 L 480 260 M 650 360 C 600 360, 550 260, 480 260 M 400 280 L 400 380" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-api)" opacity="0.2" />
+
+                    <!-- 4. API: PMS/Admin <-> Backend -->
+                    <path id="path-pms-api" class="flow-line path-api" d="M 180 370 L 320 400 M 180 430 L 320 410" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-api)" opacity="0.2" />
+
+
+                    <!-- ================= NODES ================= -->
+
+                    <!-- HEADEND / VLC -->
+                    <g id="node-headend" class="node cursor-pointer" transform="translate(40, 110)">
+                        <rect width="140" height="80" rx="12" fill="url(#grad-video)" class="shadow-lg" />
+                        <rect width="140" height="80" rx="12" fill="none" stroke="#60a5fa" stroke-width="2" />
+                        <text x="70" y="35" fill="white" font-weight="bold" text-anchor="middle" font-size="14">Headend Video</text>
+                        <text x="70" y="55" fill="#bfdbfe" text-anchor="middle" font-size="11">RTSP/UDP/HLS</text>
+                        <text x="70" y="70" fill="#bfdbfe" text-anchor="middle" font-size="10">(Nguồn Kênh TV)</text>
+                    </g>
+
+                    <!-- NETWORK SWITCH -->
+                    <g id="node-switch" class="node cursor-pointer" transform="translate(320, 210)">
+                        <rect width="160" height="80" rx="12" fill="#334155" />
+                        <rect width="160" height="80" rx="12" fill="none" stroke="#94a3b8" stroke-width="2" />
+                        <circle cx="80" cy="40" r="25" fill="#1e293b" />
+                        <path d="M 70 30 L 90 50 M 90 30 L 70 50" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+                        <text x="80" y="20" fill="white" font-weight="bold" text-anchor="middle" font-size="14">L3 Core Switch</text>
+                        <text x="80" y="70" fill="#94a3b8" text-anchor="middle" font-size="11">VLAN & Chuyển mạch</text>
+                    </g>
+
+                    <!-- MIDDLEWARE / BACKEND -->
+                    <g id="node-backend" class="node cursor-pointer" transform="translate(320, 380)">
+                        <rect width="160" height="80" rx="12" fill="url(#grad-server)" />
+                        <rect width="160" height="80" rx="12" fill="none" stroke="#34d399" stroke-width="2" />
+                        <text x="80" y="35" fill="white" font-weight="bold" text-anchor="middle" font-size="14">Vella Middleware</text>
+                        <text x="80" y="55" fill="#a7f3d0" text-anchor="middle" font-size="11">Xử lý Logic & API</text>
+                        <text x="80" y="70" fill="#a7f3d0" text-anchor="middle" font-size="10">(Trái tim hệ thống)</text>
+                    </g>
+
+                    <!-- PMS -->
+                    <g id="node-pms" class="node cursor-pointer" transform="translate(40, 330)">
+                        <rect width="140" height="50" rx="8" fill="#78350f" />
+                        <rect width="140" height="50" rx="8" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                        <text x="70" y="22" fill="white" font-weight="bold" text-anchor="middle" font-size="13">Opera PMS</text>
+                        <text x="70" y="40" fill="#fcd34d" text-anchor="middle" font-size="11">Quản lý Khách sạn</text>
+                    </g>
+
+                    <!-- ADMIN -->
+                    <g id="node-admin" class="node cursor-pointer" transform="translate(40, 400)">
+                        <rect width="140" height="50" rx="8" fill="#4c1d95" />
+                        <rect width="140" height="50" rx="8" fill="none" stroke="#a78bfa" stroke-width="1.5" />
+                        <text x="70" y="22" fill="white" font-weight="bold" text-anchor="middle" font-size="13">Admin Portal</text>
+                        <text x="70" y="40" fill="#ddd6fe" text-anchor="middle" font-size="11">Cấu hình hệ thống</text>
+                    </g>
+
+                    <!-- TVs (Rooms) -->
+                    <g class="node cursor-pointer" id="node-tvs" transform="translate(650, 110)">
+                        <!-- TV 1 -->
+                        <g transform="translate(0, 0)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" stroke="#2dd4bf" stroke-width="1.5"/>
+                            <rect x="5" y="5" width="100" height="40" fill="#134e4a" rx="4"/>
+                            <text x="55" y="28" fill="white" font-size="12" font-weight="bold" text-anchor="middle">TV P.101</text>
+                            <text x="55" y="54" fill="#5eead4" font-size="10" text-anchor="middle">"Hi Mr. John!"</text>
+                        </g>
+                        <!-- TV 2 -->
+                        <g transform="translate(0, 100)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" stroke="#2dd4bf" stroke-width="1.5"/>
+                            <rect x="5" y="5" width="100" height="40" fill="#134e4a" rx="4"/>
+                            <text x="55" y="28" fill="white" font-size="12" font-weight="bold" text-anchor="middle">TV P.102</text>
+                            <text x="55" y="54" fill="#5eead4" font-size="10" text-anchor="middle">Đang xem VTV1</text>
+                        </g>
+                        <!-- TV 3 -->
+                        <g transform="translate(0, 200)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" stroke="#2dd4bf" stroke-width="1.5"/>
+                            <rect x="5" y="5" width="100" height="40" fill="#134e4a" rx="4"/>
+                            <text x="55" y="28" fill="white" font-size="12" font-weight="bold" text-anchor="middle">TV P.103</text>
+                            <text x="55" y="54" fill="#5eead4" font-size="10" text-anchor="middle">Đang xem Bill</text>
+                        </g>
+                    </g>
+                </svg>
+
+                <!-- Legend Overlay -->
+                <div class="absolute bottom-4 right-4 bg-slate-800/80 p-3 rounded-lg border border-slate-700 backdrop-blur-sm text-xs">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-1 bg-blue-500 rounded"></div>
+                        <span class="text-slate-300">Data Video (Băng thông lớn)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 border-t-2 border-dashed border-emerald-500"></div>
+                        <span class="text-slate-300">Data API / JSON (Rất nhẹ)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description Sidebar -->
+            <div class="p-6 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Chi tiết kịch bản
+                </h3>
+                
+                <div id="info-content" class="flex-1 overflow-y-auto info-scroll pr-2 space-y-4 text-sm text-slate-300 leading-relaxed">
+                    <!-- Content injected via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const steps = [
+    {
+        title: "Kịch bản 1: Check-in & Hiện Tên khách",
+        shortTitle: "1. Lời chào Check-in",
+        activeNodes: ['node-pms', 'node-backend', 'node-switch', 'node-tvs'],
+        activePaths: ['path-pms-api', 'path-tv-api'],
+        html: `
+            <div class="p-4 bg-amber-900/30 border border-amber-800/50 rounded-lg">
+                <strong class="block text-amber-400 text-base mb-3">Quy trình: PMS ➔ Middleware ➔ TV</strong>
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li><strong>Lễ tân thao tác:</strong> Check-in khách "Mr. John" vào phòng 101 trên phần mềm PMS (như Opera, Infor).</li>
+                    <li><strong>Đồng bộ Data:</strong> PMS gửi ngay 1 Webhook/Message qua giao thức FIAS (hoặc HTNG) tới <strong>Middleware</strong>: <br><code class="text-xs text-amber-300 mt-1 block">{"action":"checkin", "room":"101", "name":"John"}</code></li>
+                    <li><strong>Middleware lưu trữ:</strong> Lưu thông tin này vào Database/Redis và bật cờ "Active" cho phòng 101. (Lúc này có thể bắn lệnh mở TV tự động).</li>
+                    <li><strong>Khách mở TV:</strong> Ứng dụng trên TV (Guest UI) khởi động. Nó sẽ không biết nó ở phòng nào, nó chỉ gửi API yêu cầu: <br><code class="text-xs text-emerald-300 mt-1 block">GET /api/device/info?mac=00:1A:2B...</code> tới Middleware.</li>
+                    <li><strong>Hiển thị:</strong> Middleware tra soát MAC -> Phòng 101 -> Trả về JSON chứa "Welcome Mr. John". TV render lên màn hình.</li>
+                </ol>
+            </div>
+        `
+    },
+    {
+        title: "Kịch bản 2: Khách mở xem kênh Truyền hình",
+        shortTitle: "2. Xem TV (Live)",
+        activeNodes: ['node-headend', 'node-switch', 'node-backend', 'node-tvs'],
+        activePaths: ['path-tv-api', 'path-vlc-sw', 'path-sw-tv'],
+        html: `
+            <div class="p-4 bg-blue-900/30 border border-blue-800/50 rounded-lg">
+                <strong class="block text-blue-400 text-base mb-3">Quy trình: TV ➔ Middleware ➔ Switch ➔ TV</strong>
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li><strong>Lấy danh sách kênh:</strong> Từ màn hình Welcome, khách bấm vào "Live TV". App trên TV gọi API lấy danh sách kênh từ Middleware. Middleware trả về list kênh kèm <strong>URL Luồng</strong> (VD: VTV1 là \`udp://@239.1.1.1:5000\`).</li>
+                    <li><strong>Yêu cầu luồng Video:</strong> Khách chọn VTV1. Trình phát video (Player) của TV gửi bản tin <strong>IGMP Join</strong> tới con Switch vật lý ở tầng: <em>"Cho tôi xin dữ liệu của group 239.1.1.1"</em>.</li>
+                    <li><strong>Switch phân phối luồng:</strong> Switch kiểm tra thấy nguồn từ Headend đang phát luồng này, nó lập tức "mở cổng" đẩy băng thông Video (đường màu xanh dương) thẳng từ Headend xuống cổng mạng của TV 101.</li>
+                </ol>
+                <div class="mt-4 p-2 bg-blue-950/50 rounded border border-blue-800 text-xs text-blue-200">
+                    * Khúc này rất quan trọng: Dữ liệu Video <strong>KHÔNG</strong> chạy xuyên qua Middleware. Middleware chỉ làm nhiệm vụ cấp đường link URL lúc đầu. Nhờ đó, Backend không bị sập.
+                </div>
+            </div>
+        `
+    },
+    {
+        title: "Kịch bản 3: Khách kiểm tra Hoá đơn phòng (View Bill)",
+        shortTitle: "3. Tra cứu Bill",
+        activeNodes: ['node-pms', 'node-backend', 'node-switch', 'node-tvs'],
+        activePaths: ['path-pms-api', 'path-tv-api'],
+        html: `
+            <div class="p-4 bg-emerald-900/30 border border-emerald-800/50 rounded-lg">
+                <strong class="block text-emerald-400 text-base mb-3">Quy trình: TV ➔ Middleware ➔ PMS ➔ TV</strong>
+                <p class="mb-3 text-slate-300">Hoá đơn (Tiền phòng, minibar, nhà hàng, spa...) nằm trên máy chủ PMS của khách sạn, không nằm trên Middleware IPTV.</p>
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li><strong>Yêu cầu từ TV:</strong> Khách dùng remote chọn "My Bill". TV gọi API tới Middleware: <br><code class="text-xs text-emerald-300 block">GET /api/guest/bill?room=101</code></li>
+                    <li><strong>Query PMS:</strong> Middleware lúc này đóng vai trò cầu nối (Proxy). Nó dịch yêu cầu này thành một bản tin theo chuẩn PMS (VD: <em>FIAS Request Folio Balance</em>) và gửi sang cho server Opera PMS.</li>
+                    <li><strong>PMS phản hồi:</strong> Opera kiểm tra và trả về số dư cùng chi tiết các khoản phí cho Middleware.</li>
+                    <li><strong>Format & Hiển thị:</strong> Middleware nhận data khô từ PMS, biến đổi nó thành JSON đẹp đẽ và trả về cho app UI trên TV hiển thị thành bảng Bill sang trọng cho khách xem.</li>
+                </ol>
+            </div>
+        `
+    }
+];
+
+function initDiagram() {
+    const btnContainer = document.getElementById('btn-container');
+    const nodes = document.querySelectorAll('.node');
+    const paths = document.querySelectorAll('.flow-line');
+
+    // Generate Buttons
+    steps.forEach((step, index) => {
+        const btn = document.createElement('button');
+        btn.className = `px-4 py-2 text-sm font-medium rounded-lg transition-colors border border-slate-600 
+                         ${index === 0 ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`;
+        btn.innerText = step.shortTitle;
+        btn.onclick = () => renderStep(index);
+        btnContainer.appendChild(btn);
+    });
+
+    renderStep(0); // Start at step 1
+}
+
+function renderStep(index) {
+    const step = steps[index];
+    const buttons = document.getElementById('btn-container').children;
+
+    // Update buttons
+    Array.from(buttons).forEach((btn, i) => {
+        if (i === index) {
+            btn.className = `px-4 py-2 text-sm font-medium rounded-lg transition-colors border bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/30`;
+        } else {
+            btn.className = `px-4 py-2 text-sm font-medium rounded-lg transition-colors border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700`;
+        }
+    });
+
+    // Update Info Content
+    const infoContent = document.getElementById('info-content');
+    infoContent.innerHTML = step.html;
+
+    // Dim all nodes and paths
+    document.querySelectorAll('.node').forEach(node => {
+        node.style.opacity = '0.3';
+        node.style.filter = 'grayscale(80%)';
+    });
+    document.querySelectorAll('.flow-line').forEach(path => {
+        path.style.opacity = '0.05';
+    });
+
+    // Highlight active nodes and paths
+    step.activeNodes.forEach(nodeId => {
+        const el = document.getElementById(nodeId);
+        if(el) {
+            el.style.opacity = '1';
+            el.style.filter = 'grayscale(0%)';
+        }
+    });
+
+    step.activePaths.forEach(pathId => {
+        const el = document.getElementById(pathId);
+        if(el) el.style.opacity = '1';
+    });
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', initDiagram);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vella IPTV | Enterprise Architecture & Multicast Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #10b981;
+            --secondary: #3b82f6;
+            --accent: #f43f5e;
+            --bg-dark: #0a0f1c;
+            --panel-bg: rgba(15, 23, 42, 0.6);
+            --border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .node-active {
+            border-color: var(--secondary) !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+
+        @keyframes flow-line {
+            0% { stroke-dashoffset: 100; opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { stroke-dashoffset: 0; opacity: 0.2; }
+        }
+        .animate-flow { 
+            stroke-dasharray: 10; 
+            animation: flow-line 4s linear infinite; 
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 28px;
+            bottom: -20px;
+            width: 1px;
+            background: linear-gradient(to bottom, #3b82f6, transparent);
+        }
+    </style>
+</head>
+<body class="min-h-screen selection:bg-blue-500/30">
+
+    <!-- Top Navigation / Header -->
+    <nav class="border-b border-white/5 py-4 px-8 flex justify-between items-center sticky top-0 bg-[#0a0f1c]/80 backdrop-blur-md z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-emerald-400 to-blue-600 rounded-lg flex items-center justify-center">
+                <i data-lucide="tv" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <span class="text-sm font-bold tracking-tight">VELLA IPTV <span class="text-blue-500">SYSTEM</span></span>
+                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Enterprise Architecture v3.0</p>
+            </div>
+        </div>
+        <div class="flex gap-6 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <span class="text-emerald-400 border-b border-emerald-400 pb-1">Architecture</span>
+            <span class="hover:text-white cursor-pointer transition">Network Flow</span>
+            <span class="hover:text-white cursor-pointer transition">Management</span>
+        </div>
+    </nav>
+
+    <main class="max-w-[1400px] mx-auto p-6 lg:p-12">
+        
+        <!-- Hero Section -->
+        <div class="mb-12">
+            <h1 class="text-4xl lg:text-5xl font-extrabold gradient-text mb-4">Kiến trúc Hệ thống & Luồng Dữ liệu</h1>
+            <p class="text-slate-400 max-w-2xl leading-relaxed">
+                Phân tích kịch bản Multi-Room Multicast kết hợp với Docker Stack microservices của Vella IPTV. Giải pháp tối ưu băng thông cho các khách sạn cao cấp.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT COLUMN: Infrastructure (The "What") -->
+            <div class="lg:col-span-8 space-y-12">
+                
+                <!-- SECTION: DOCKER STACK (Software Layer) -->
+                <section class="space-y-6">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="layers" class="w-5 h-5 text-emerald-400"></i>
+                        <h2 class="text-sm font-bold uppercase tracking-widest text-emerald-400">Software Stack (Docker)</h2>
+                    </div>
+                    
+                    <div class="glass-panel rounded-2xl p-8 bg-gradient-to-br from-slate-900/40 to-transparent">
+                        <!-- Simplified Visual Representation of the Uploaded PNG -->
+                        <div class="grid grid-cols-1 gap-6 relative">
+                            <!-- Proxy -->
+                            <div class="flex justify-center">
+                                <div class="w-64 glass-panel p-4 rounded-xl text-center border-white/10">
+                                    <div class="text-xs font-bold text-slate-400 mb-1">vella-proxy</div>
+                                    <div class="text-[10px] text-slate-500 italic">Nginx / SSL / Routing</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Main Apps -->
+                            <div class="grid grid-cols-2 gap-8 px-12">
+                                <div class="glass-panel p-4 rounded-xl border-emerald-500/20 text-center relative">
+                                    <div class="text-xs font-bold text-emerald-400 mb-1">vella-guest-ui</div>
+                                    <div class="text-[10px] text-slate-500">Next.js • TV-First • Shaka</div>
+                                    <div class="absolute -bottom-4 left-1/2 -translate-x-1/2"><i data-lucide="arrow-down" class="w-4 h-4 text-slate-600"></i></div>
+                                </div>
+                                <div class="glass-panel p-4 rounded-xl border-indigo-500/20 text-center relative">
+                                    <div class="text-xs font-bold text-indigo-400 mb-1">vella-admin-portal</div>
+                                    <div class="text-[10px] text-slate-500">CMS • Monitoring • Alerts</div>
+                                    <div class="absolute -bottom-4 left-1/2 -translate-x-1/2"><i data-lucide="arrow-down" class="w-4 h-4 text-slate-600"></i></div>
+                                </div>
+                            </div>
+
+                            <!-- Backend & Integration -->
+                            <div class="flex justify-center items-center gap-8">
+                                <div class="w-full max-w-md glass-panel p-5 rounded-xl border-blue-500/30 bg-blue-500/5 text-center relative">
+                                    <div class="text-xs font-bold text-blue-400 mb-1 uppercase tracking-tighter">vella-backend (Core Engine)</div>
+                                    <div class="text-[10px] text-blue-300/70 mb-2">FastAPI • Python 3.12 • Room Mapping</div>
+                                    <div class="flex justify-center gap-2 mt-2">
+                                        <span class="px-2 py-0.5 bg-blue-900/30 border border-blue-500/20 text-[9px] rounded">PMS (Opera/Infor)</span>
+                                        <span class="px-2 py-0.5 bg-blue-900/30 border border-blue-500/20 text-[9px] rounded">SQLAlchemy</span>
+                                    </div>
+                                    <!-- DB & Cache connection -->
+                                    <div class="flex justify-around mt-8">
+                                        <div class="p-2 border border-amber-500/20 rounded bg-amber-900/10 w-24">
+                                            <div class="text-[9px] text-amber-500 font-bold">vella-db</div>
+                                            <div class="text-[8px] text-slate-500">PostgreSQL 16</div>
+                                        </div>
+                                        <div class="p-2 border border-teal-500/20 rounded bg-teal-900/10 w-24">
+                                            <div class="text-[9px] text-teal-500 font-bold">vella-cache</div>
+                                            <div class="text-[8px] text-slate-500">Redis</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION: NETWORK MULTICAST (Hardware Layer) -->
+                <section class="space-y-6">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="network" class="w-5 h-5 text-blue-400"></i>
+                        <h2 class="text-sm font-bold uppercase tracking-widest text-blue-400">Network Distribution (L3 Flow)</h2>
+                    </div>
+
+                    <div class="space-y-8 px-4">
+                        <!-- Headend Source -->
+                        <div class="flex items-center gap-6">
+                            <div class="w-32 text-right">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">Input Source</span>
+                                <p class="text-xs font-bold text-pink-500">HEADEND DVB-S2</p>
+                            </div>
+                            <div class="flex-1 grid grid-cols-3 gap-3">
+                                <div class="glass-panel p-3 rounded-lg border-pink-500/20 text-center">
+                                    <div class="text-[10px] font-bold text-pink-400">STREAM A</div>
+                                    <div class="text-[8px] text-slate-500">HBO • 239.1.1.1</div>
+                                </div>
+                                <div class="glass-panel p-3 rounded-lg border-pink-500/20 text-center">
+                                    <div class="text-[10px] font-bold text-pink-400">STREAM B</div>
+                                    <div class="text-[8px] text-slate-500">CNN • 239.1.1.2</div>
+                                </div>
+                                <div class="glass-panel p-3 rounded-lg border-pink-500/20 text-center">
+                                    <div class="text-[10px] font-bold text-pink-400">STREAM C</div>
+                                    <div class="text-[8px] text-slate-500">DISCOVERY • 239.1.1.3</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Core Switch -->
+                        <div class="flex items-center gap-6">
+                            <div class="w-32 text-right">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">IGMP Querier</span>
+                                <p class="text-xs font-bold text-blue-500">CORE L3 SWITCH</p>
+                            </div>
+                            <div class="flex-1 glass-panel p-4 rounded-xl border-blue-500/40 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full"></div>
+                                <div class="flex justify-between items-center px-4">
+                                    <div class="text-[10px] font-mono text-blue-300">Routing Table: IGMP Snooping v3 Active</div>
+                                    <div class="flex gap-4">
+                                        <div class="flex items-center gap-1 text-[9px] text-slate-400">
+                                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Port 1 (P.101)
+                                        </div>
+                                        <div class="flex items-center gap-1 text-[9px] text-slate-400">
+                                            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Port 2 (P.102)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Room Endpoints -->
+                        <div class="flex items-center gap-6">
+                            <div class="w-32 text-right">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">Endpoints</span>
+                                <p class="text-xs font-bold text-emerald-400">GUEST ROOMS</p>
+                            </div>
+                            <div class="flex-1 grid grid-cols-3 gap-4">
+                                <div class="glass-panel p-4 rounded-xl border-white/5 group hover:border-emerald-500/50 transition cursor-pointer">
+                                    <div class="text-[9px] text-slate-500 mb-2 font-bold uppercase tracking-widest">Phòng 101</div>
+                                    <div class="aspect-video bg-black rounded-lg relative overflow-hidden flex items-center justify-center border border-white/10">
+                                        <img src="https://images.unsplash.com/photo-1594908900066-3f47337549d8?auto=format&fit=crop&w=400&q=80" class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-110 transition duration-700" alt="Room 101 TV">
+                                        <span class="text-[10px] font-bold z-10 text-emerald-400 shadow-lg">HBO HD</span>
+                                    </div>
+                                    <div class="mt-2 flex justify-between items-center">
+                                        <span class="text-[8px] text-slate-500">239.1.1.1</span>
+                                        <span class="text-[9px] font-bold text-emerald-500">10 Mbps</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="glass-panel p-4 rounded-xl border-white/5 group hover:border-amber-500/50 transition cursor-pointer">
+                                    <div class="text-[9px] text-slate-500 mb-2 font-bold uppercase tracking-widest">Phòng 102</div>
+                                    <div class="aspect-video bg-black rounded-lg relative overflow-hidden flex items-center justify-center border border-white/10">
+                                        <img src="https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=400&q=80" class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-110 transition duration-700" alt="Room 102 TV">
+                                        <span class="text-[10px] font-bold z-10 text-amber-400">CNN News</span>
+                                    </div>
+                                    <div class="mt-2 flex justify-between items-center">
+                                        <span class="text-[8px] text-slate-500">239.1.1.2</span>
+                                        <span class="text-[9px] font-bold text-amber-500">4 Mbps</span>
+                                    </div>
+                                </div>
+
+                                <div class="glass-panel p-4 rounded-xl border-white/5 group hover:border-blue-500/50 transition cursor-pointer">
+                                    <div class="text-[9px] text-slate-500 mb-2 font-bold uppercase tracking-widest">Phòng 103</div>
+                                    <div class="aspect-video bg-black rounded-lg relative overflow-hidden flex items-center justify-center border border-white/10">
+                                        <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=400&q=80" class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-110 transition duration-700" alt="Room 103 TV">
+                                        <span class="text-[10px] font-bold z-10 text-blue-400">Discovery</span>
+                                    </div>
+                                    <div class="mt-2 flex justify-between items-center">
+                                        <span class="text-[8px] text-slate-500">239.1.1.3</span>
+                                        <span class="text-[9px] font-bold text-blue-500">8 Mbps</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- RIGHT COLUMN: Narrative & Details (The "How") -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="glass-panel rounded-2xl p-6 sticky top-24 border-blue-500/20">
+                    <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                        <i data-lucide="info" class="w-5 h-5 text-blue-500"></i>
+                        Vận hành Đa luồng
+                    </h3>
+
+                    <div class="space-y-8">
+                        <!-- Step 1 -->
+                        <div class="relative pl-10 step-indicator">
+                            <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-pink-500 flex items-center justify-center text-[10px] font-black text-black ring-4 ring-pink-500/20">01</div>
+                            <h4 class="text-xs font-bold uppercase text-pink-400 mb-1">DVB-S2 To IP Conversion</h4>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">
+                                Headend nhận tín hiệu vệ tinh, giải mã và đóng gói vào các luồng Multicast UDP. Mỗi kênh được định danh bằng một địa chỉ IP riêng thuộc dải <code>239.x.x.x</code>.
+                            </p>
+                        </div>
+
+                        <!-- Step 2 -->
+                        <div class="relative pl-10 step-indicator">
+                            <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-black text-black ring-4 ring-emerald-500/20">02</div>
+                            <h4 class="text-xs font-bold uppercase text-emerald-400 mb-1">IGMP Join Request</h4>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">
+                                Khi người dùng tại P.101 chọn kênh HBO thông qua <strong>vella-guest-ui</strong>, Smart TV gửi bản tin <code>IGMP Join</code> tới Switch yêu cầu nhận luồng <code>239.1.1.1</code>.
+                            </p>
+                        </div>
+
+                        <!-- Step 3 -->
+                        <div class="relative pl-10 step-indicator">
+                            <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-black text-black ring-4 ring-blue-500/20">03</div>
+                            <h4 class="text-xs font-bold uppercase text-blue-400 mb-1">Selective Forwarding</h4>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">
+                                <strong>IGMP Snooping</strong> cho phép Switch chỉ chuyển tiếp (forward) traffic Multicast tới đúng cổng yêu cầu, thay vì làm tràn ngập (flood) toàn bộ mạng LAN.
+                            </p>
+                        </div>
+
+                        <!-- Step 4 -->
+                        <div class="relative pl-10">
+                            <div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-black text-white">04</div>
+                            <h4 class="text-xs font-bold uppercase text-slate-300 mb-1">Bandwidth Efficiency</h4>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">
+                                Nếu 100 phòng cùng xem cùng 1 kênh, băng thông từ Headend tới Switch chỉ tốn đúng dung lượng của 1 kênh (~10Mbps), không phải 1000Mbps.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Tech Tags -->
+                    <div class="mt-12 pt-6 border-t border-white/5">
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-slate-800 text-[9px] text-slate-400 rounded-md border border-white/5 uppercase font-bold tracking-tighter">Docker Swarm</span>
+                            <span class="px-2 py-1 bg-slate-800 text-[9px] text-slate-400 rounded-md border border-white/5 uppercase font-bold tracking-tighter">VLAN Segregation</span>
+                            <span class="px-2 py-1 bg-slate-800 text-[9px] text-slate-400 rounded-md border border-white/5 uppercase font-bold tracking-tighter">QoS Tagging</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Integration Highlight -->
+                <div class="glass-panel rounded-2xl p-6 border-emerald-500/20 bg-emerald-500/5">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i>
+                        <h4 class="text-xs font-bold text-emerald-400 uppercase">PMS Synchronization</h4>
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                        Vella-backend liên tục đồng bộ trạng thái Guest từ Opera/Infor để tự động cá nhân hóa trải nghiệm IPTV khi khách Check-in.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

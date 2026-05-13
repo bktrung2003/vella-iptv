@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>IPTV Hospitality | Luồng dữ liệu hệ thống TV khách sạn</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0f4f8;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 32px 24px;
+            color: #1a2c3e;
+        }
+
+        /* Main container */
+        .iptv-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            backdrop-filter: blur(0px);
+            transition: all 0.2s;
+        }
+
+        /* Header */
+        .dashboard-header {
+            padding: 20px 28px 12px 28px;
+            border-bottom: 1px solid #eef2f6;
+            background: white;
+        }
+        .dashboard-header h1 {
+            font-size: 1.7rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1F3A5F, #2E5A8B);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+        .dashboard-header p {
+            color: #4a627a;
+            font-size: 0.9rem;
+            margin-top: 6px;
+            font-weight: 450;
+        }
+        .badge {
+            background: #eef2ff;
+            color: #1f4f8f;
+            font-size: 0.7rem;
+            border-radius: 40px;
+            padding: 4px 12px;
+            display: inline-block;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* step buttons */
+        .step-bar {
+            padding: 16px 24px 8px 24px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #eef2f6;
+            background: #fefefe;
+        }
+        .step-btn {
+            cursor: pointer;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            font-weight: 550;
+            border-radius: 100px;
+            background: #f8fafc;
+            border: 1px solid #dce3ec;
+            color: #2c4c6e;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.02);
+        }
+        .step-btn:hover {
+            background: #eef3fc;
+            border-color: #b9c8e9;
+            transform: translateY(-1px);
+        }
+        .step-btn.active {
+            background: #1f6392;
+            border-color: #1f6392;
+            color: white;
+            box-shadow: 0 4px 8px rgba(31,99,146,0.2);
+        }
+
+        /* info box */
+        .info-panel {
+            margin: 20px 24px 16px 24px;
+            background: #f9fbfe;
+            border-left: 5px solid #2e7eb0;
+            border-radius: 20px;
+            padding: 16px 22px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.8);
+            transition: 0.15s;
+        }
+        .info-panel strong {
+            color: #1a4b77;
+            font-weight: 700;
+        }
+        .info-panel code {
+            background: #eef2f7;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-family: 'SF Mono', 'JetBrains Mono', monospace;
+            color: #c44536;
+        }
+
+        /* svg wrapper */
+        .svg-wrapper {
+            padding: 8px 16px 16px 16px;
+            overflow-x: auto;
+            background: #ffffff;
+        }
+        svg {
+            display: block;
+            margin: 0 auto;
+            width: 100%;
+            height: auto;
+            font-family: 'Inter', system-ui, sans-serif;
+            cursor: default;
+        }
+
+        /* node styles */
+        .node {
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        .node rect, .node .bg-rect {
+            transition: stroke-width 0.15s, filter 0.2s, stroke 0.1s;
+        }
+        .node:hover rect {
+            filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.08));
+            stroke-width: 1.8;
+        }
+        /* highlight effect for current step */
+        .node-highlight rect {
+            stroke-width: 3 !important;
+            filter: drop-shadow(0 0 8px rgba(31, 99, 146, 0.5));
+            stroke: #f0b34b !important;
+        }
+        .c-amber rect { fill: #FFF7E5; stroke: #E2A526; }
+        .c-gray rect { fill: #F2F4F8; stroke: #9aaebf; }
+        .c-blue rect { fill: #E8F0FE; stroke: #378ADD; }
+        .c-teal rect { fill: #E0F4F0; stroke: #1D9E75; }
+        .c-purple rect { fill: #F1EBFE; stroke: #7C5CBF; }
+
+        .th { font-size: 13px; font-weight: 600; fill: #1f2f3e; dominant-baseline: middle; text-anchor: middle; }
+        .ts { font-size: 10.5px; fill: #5b6f82; dominant-baseline: middle; text-anchor: middle; }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin: 16px 24px 24px 24px;
+            padding-top: 8px;
+            border-top: 1px solid #e4eaf1;
+            font-size: 11px;
+            color: #2e506e;
+        }
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-note {
+            background: #f4f9fe;
+            margin: 0 24px 24px 24px;
+            border-radius: 18px;
+            padding: 14px 20px;
+            font-size: 12px;
+            color: #2a577b;
+            line-height: 1.45;
+        }
+        button, .step-btn {
+            background: none;
+            border: none;
+        }
+        a {
+            text-decoration: none;
+        }
+        @keyframes flow {
+            to { stroke-dashoffset: -24; }
+        }
+        @keyframes flowRev {
+            to { stroke-dashoffset: 24; }
+        }
+        .stream-line { stroke-dasharray: 6 4; animation: flow 1.2s linear infinite; }
+        .ctrl-line   { stroke-dasharray: 4 6; animation: flow 1.5s linear infinite; }
+
+        @media (max-width: 720px) {
+            body { padding: 16px; }
+            .th { font-size: 10px; }
+            .ts { font-size: 8px; }
+            .step-btn { padding: 5px 12px; font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="iptv-container">
+    <div class="dashboard-header">
+        <h1>📺 IPTV Hospitality — Kiến trúc chuẩn khách sạn thông minh</h1>
+        <p>Luồng dữ liệu từ nguồn phát (VLC/Encoder) tới từng TV phòng, tích hợp PMS &amp; quản trị tập trung</p>
+        <div class="badge">✨ Dùng cho khách sạn 4-5 sao | HLS | Middleware Vella | PMS Opera/Infor</div>
+    </div>
+
+    <div class="step-bar">
+        <button class="step-btn" data-step="0">📡 1. VLC / Encoder</button>
+        <button class="step-btn" data-step="1">🔌 2. Switch &amp; VLAN</button>
+        <button class="step-btn" data-step="2">⚙️ 3. Vella Backend (Middleware)</button>
+        <button class="step-btn" data-step="3">📺 4. TV phòng &amp; HLS Player</button>
+        <button class="step-btn" data-step="4">🖥️ 5. Admin + PMS đồng bộ</button>
+    </div>
+
+    <div class="info-panel" id="info-text">
+        <strong>🎬 Bước 1 — Nguồn phát (VLC / Headend):</strong> Video từ satellite, local file hoặc live feed được mã hóa sang <strong>HLS (HTTP Live Streaming)</strong>. VLC đóng vai trò "encoder" nội bộ, tạo các segment .ts và playlist .m3u8, đẩy lên mạng LAN khách sạn. Đây là giải pháp linh hoạt chi phí thấp, trong các hệ thống chuyên nghiệp thay bằng thiết bị hardware encoder (Haivision, Exterity).
+    </div>
+
+    <div class="svg-wrapper">
+        <svg width="100%" viewBox="0 0 720 430" id="main-svg" role="img" style="background: #ffffff; border-radius: 28px;">
+            <title>Luồng dữ liệu IPTV Hotel - Minh họa tương tác</title>
+            <desc>Hệ thống IPTV khách sạn với VLC nguồn, Switch, Vella Backend, PMS và các TV phòng</desc>
+            <defs>
+                <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </marker>
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                    <feMerge>
+                        <feMergeNode in="offsetblur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+
+            <!-- VLC SOURCE (Encoder) -->
+            <g class="node c-amber" id="g-vlc" data-node="vlc">
+                <rect x="20" y="160" width="115" height="60" rx="12" stroke-width="1.2" fill="#FFF7E5" stroke="#E2A526"/>
+                <text class="th" x="77" y="181" text-anchor="middle" dominant-baseline="central">📡 VLC / Encoder</text>
+                <text class="ts" x="77" y="198" text-anchor="middle" dominant-baseline="central">HLS (m3u8 + .ts)</text>
+                <text class="ts" x="77" y="212" text-anchor="middle" dominant-baseline="central">RTSP / HTTP stream</text>
+            </g>
+
+            <!-- SWITCH -->
+            <g class="node c-gray" id="g-switch" data-node="switch">
+                <rect x="200" y="160" width="115" height="60" rx="12" stroke-width="1.2" fill="#F2F4F8" stroke="#9aaebf"/>
+                <text class="th" x="257" y="181" text-anchor="middle" dominant-baseline="central">🔀 Network Switch</text>
+                <text class="ts" x="257" y="198" text-anchor="middle" dominant-baseline="central">Gigabit / VLAN khách sạn</text>
+                <text class="ts" x="257" y="212" text-anchor="middle" dominant-baseline="central">IGMP Snooping (multicast)</text>
+            </g>
+
+            <!-- VELLA BACKEND (Middleware) -->
+            <g class="node c-blue" id="g-backend" data-node="backend">
+                <rect x="390" y="140" width="150" height="80" rx="14" stroke-width="1.2" fill="#E8F0FE" stroke="#378ADD"/>
+                <text class="th" x="465" y="163" text-anchor="middle" dominant-baseline="central">⚙️ Vella Backend (Middleware)</text>
+                <text class="ts" x="465" y="182" text-anchor="middle" dominant-baseline="central">FastAPI + Redis cache</text>
+                <text class="ts" x="465" y="198" text-anchor="middle" dominant-baseline="central">JWT auth · Room mapping · EPG</text>
+                <text class="ts" x="465" y="212" text-anchor="middle" dominant-baseline="central">Channel lineup &amp; VOD metadata</text>
+            </g>
+
+            <!-- TV ROOMS (3 phòng) -->
+            <g class="node c-teal" id="g-tv1" data-node="tv">
+                <rect x="590" y="60" width="112" height="52" rx="10" stroke-width="1.2" fill="#E0F4F0" stroke="#1D9E75"/>
+                <text class="th" x="646" y="79" text-anchor="middle" dominant-baseline="central">🛏️ Phòng 101</text>
+                <text class="ts" x="646" y="97" text-anchor="middle" dominant-baseline="central">Shaka Player / HLS.js</text>
+            </g>
+            <g class="node c-teal" id="g-tv2" data-node="tv">
+                <rect x="590" y="158" width="112" height="52" rx="10" stroke-width="1.2" fill="#E0F4F0" stroke="#1D9E75"/>
+                <text class="th" x="646" y="177" text-anchor="middle" dominant-baseline="central">🛏️ Phòng 102</text>
+                <text class="ts" x="646" y="195" text-anchor="middle" dominant-baseline="central">Shaka Player / HLS.js</text>
+            </g>
+            <g class="node c-teal" id="g-tv3" data-node="tv">
+                <rect x="590" y="256" width="112" height="52" rx="10" stroke-width="1.2" fill="#E0F4F0" stroke="#1D9E75"/>
+                <text class="th" x="646" y="275" text-anchor="middle" dominant-baseline="central">🛏️ Phòng 103</text>
+                <text class="ts" x="646" y="293" text-anchor="middle" dominant-baseline="central">Shaka Player / HLS.js</text>
+            </g>
+
+            <!-- ADMIN DASHBOARD -->
+            <g class="node c-purple" id="g-admin" data-node="admin">
+                <rect x="390" y="305" width="150" height="58" rx="12" stroke-width="1.2" fill="#F1EBFE" stroke="#7C5CBF"/>
+                <text class="th" x="465" y="326" text-anchor="middle" dominant-baseline="central">🖥️ Admin Dashboard</text>
+                <text class="ts" x="465" y="344" text-anchor="middle" dominant-baseline="central">Quản lý kênh, phòng, alert, analytics</text>
+            </g>
+
+            <!-- PMS (Opera/Infor) -->
+            <g class="node c-gray" id="g-pms" data-node="pms">
+                <rect x="200" y="305" width="115" height="58" rx="12" stroke-width="1.2" fill="#F2F4F8" stroke="#9aaebf"/>
+                <text class="th" x="257" y="326" text-anchor="middle" dominant-baseline="central">🏨 PMS (Opera / Infor)</text>
+                <text class="ts" x="257" y="344" text-anchor="middle" dominant-baseline="central">Room status · Guest profile</text>
+            </g>
+
+            <!-- ========== DATA FLOW LINES ========== -->
+            <!-- VLC → Switch -->
+            <line id="l1" x1="135" y1="190" x2="198" y2="190" stroke="#E2A526" stroke-width="2.2" class="stream-line" marker-end="url(#arr)" opacity="1"/>
+            <!-- Switch → Backend -->
+            <line id="l2" x1="315" y1="190" x2="388" y2="190" stroke="#378ADD" stroke-width="2.2" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+            <!-- Backend → TV1 -->
+            <path id="l3a" d="M540 165 L565 165 L565 86 L588 86" fill="none" stroke="#1D9E75" stroke-width="1.8" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+            <!-- Backend → TV2 -->
+            <line id="l3b" x1="540" y1="184" x2="588" y2="184" stroke="#1D9E75" stroke-width="1.8" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+            <!-- Backend → TV3 -->
+            <path id="l3c" d="M540 200 L565 200 L565 282 L588 282" fill="none" stroke="#1D9E75" stroke-width="1.8" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+
+            <!-- PMS → Backend (control: guest sync) -->
+            <path id="l4" d="M315 334 L388 334" fill="none" stroke="#534AB7" stroke-width="1.8" class="ctrl-line" marker-end="url(#arr)" opacity="0.3"/>
+            <!-- Admin ↔ Backend -->
+            <line id="l5" x1="465" y1="305" x2="465" y2="222" stroke="#534AB7" stroke-width="1.8" class="ctrl-line" marker-end="url(#arr)" opacity="0.3"/>
+
+            <!-- Legend -->
+            <g transform="translate(24, 380)">
+                <line x1="0" y1="0" x2="30" y2="0" stroke="#E2A526" stroke-width="2.2" stroke-dasharray="6 4"/>
+                <text x="38" y="3" font-size="10.5" fill="#2a4b6e">Video Stream (HLS / RTSP)</text>
+                <line x1="200" y1="0" x2="230" y2="0" stroke="#534AB7" stroke-width="1.8" stroke-dasharray="4 5"/>
+                <text x="238" y="3" font-size="10.5" fill="#2a4b6e">API / Control (Auth, metadata)</text>
+                <line x1="380" y1="0" x2="410" y2="0" stroke="#1D9E75" stroke-width="1.8" stroke-dasharray="6 4"/>
+                <text x="418" y="3" font-size="10.5" fill="#2a4b6e">Phân phối stream tới TV</text>
+            </g>
+        </svg>
+    </div>
+
+    <div class="footer-note">
+        💡 <strong>Kiến thức chuyên sâu Hospitality:</strong> Hệ thống IPTV hiện đại dùng middleware (Vella) để tách biệt nguồn phát và giao diện TV. 
+        PMS tự động đồng bộ khi khách check-in → TV hiển thị "Chào mừng Ông/Bà X". Redis cache giảm tải cho backend, JWT đảm bảo chỉ phòng đã check-in mới xem được kênh. 
+        HLS giúp vượt tường lửa, tương thích mọi smart TV. Multicast qua IGMP tối ưu băng thông khi nhiều phòng cùng xem một kênh.
+    </div>
+</div>
+
+<script>
+    // Định nghĩa chi tiết từng bước (opacity lines + nội dung hiển thị)
+    const steps = [
+        {
+            lines: { l1: 1, l2: 0.2, l3a: 0.15, l3b: 0.15, l3c: 0.15, l4: 0.2, l5: 0.2 },
+            highlightNodes: ['vlc'],
+            info: '<strong>🎬 Bước 1 — VLC / Nguồn phát (Headend):</strong> VLC (hoặc hardware encoder) chuyển đổi tín hiệu đầu vào (SDI, file, satellite) thành luồng <strong>HLS (HTTP Live Streaming)</strong> với các file .ts (2-6 giây). Stream được đẩy qua giao thức HTTP/RTSP tới địa chỉ nội bộ như <code>http://10.10.0.50:8080/stream/ch1.m3u8</code>. Trong khách sạn lớn, nên dùng encoder chuyên dụng (Haivision, Exterity) để đảm bảo ổn định 24/7.'
+        },
+        {
+            lines: { l1: 1, l2: 1, l3a: 0.15, l3b: 0.15, l3c: 0.15, l4: 0.2, l5: 0.2 },
+            highlightNodes: ['switch'],
+            info: '<strong>🔌 Bước 2 — Network Switch &amp; VLAN nội bộ:</strong> Switch layer 2/3 phân phối gói tin giữa encoder, middleware server, và các TV thông minh. Sử dụng <strong>VLAN riêng cho IPTV</strong> + <strong>IGMP snooping</strong> để multicast không làm nghẽn mạng. Nhờ đó 100 phòng cùng xem kênh HBO vẫn tiết kiệm băng thông.'
+        },
+        {
+            lines: { l1: 0.3, l2: 1, l3a: 1, l3b: 1, l3c: 1, l4: 0.8, l5: 0.8 },
+            highlightNodes: ['backend'],
+            info: '<strong>⚙️ Bước 3 — Vella Backend (Middleware xử lý):</strong> Là trái tim hệ thống: nhận request từ TV, xác thực JWT, kiểm tra phòng qua PMS, trả về <strong>channel lineup động</strong> (gói kênh theo hạng phòng). Dùng Redis cache để tăng tốc. Đồng thời quản lý EPG (lịch chương trình), quyền VOD và gửi lệnh điều khiển từ xa.'
+        },
+        {
+            lines: { l1: 0.25, l2: 0.5, l3a: 1, l3b: 1, l3c: 1, l4: 0.2, l5: 0.3 },
+            highlightNodes: ['tv'],
+            info: '<strong>📺 Bước 4 — TV phòng khách &amp; Trải nghiệm người dùng:</strong> Giao diện Guest UI (Next.js) chạy trên Smart TV hoặc set-top-box, dùng <strong>Shaka Player / HLS.js</strong> để phát luồng HLS trực tiếp từ nguồn. Khách dùng remote D-Pad để zapping kênh, xem VOD, gọi dịch vụ phòng, nhận thông báo khẩn cấp. Mỗi phòng có trải nghiệm cá nhân hóa dựa trên ngôn ngữ và sở thích.'
+        },
+        {
+            lines: { l1: 0.2, l2: 0.2, l3a: 0.2, l3b: 0.2, l3c: 0.2, l4: 1, l5: 1 },
+            highlightNodes: ['admin', 'pms'],
+            info: '<strong>🖥️ Bước 5 — Admin Dashboard + PMS (Property Management System):</strong> Lễ tân quản lý toàn bộ kênh, gói phòng, gửi cảnh báo khẩn (Emergency Alert), theo dõi analytics (kênh nào xem nhiều nhất). PMS (Opera, Infor, Oracle) tự động đồng bộ khi khách check-in/out → cập nhật quyền truy cập, hiển thị tên khách trên TV, gợi ý nội dung phù hợp. Đây là tích hợp quan trọng giúp khách sạn tăng doanh thu từ VOD và dịch vụ.'
+        }
+    ];
+
+    let currentStep = 0;
+
+    // Hàm highlight các node theo danh sách id (data-node)
+    function highlightNodesByIds(nodeIds) {
+        // Xóa highlight tất cả node trước
+        document.querySelectorAll('.node').forEach(node => {
+            node.classList.remove('node-highlight');
+        });
+        if (!nodeIds || nodeIds.length === 0) return;
+        nodeIds.forEach(id => {
+            let targetNode = null;
+            if (id === 'vlc') targetNode = document.getElementById('g-vlc');
+            else if (id === 'switch') targetNode = document.getElementById('g-switch');
+            else if (id === 'backend') targetNode = document.getElementById('g-backend');
+            else if (id === 'tv') {
+                // highlight cả 3 TV
+                const tvs = ['g-tv1', 'g-tv2', 'g-tv3'];
+                tvs.forEach(tvId => {
+                    const tvEl = document.getElementById(tvId);
+                    if (tvEl) tvEl.classList.add('node-highlight');
+                });
+                return;
+            }
+            else if (id === 'admin') targetNode = document.getElementById('g-admin');
+            else if (id === 'pms') targetNode = document.getElementById('g-pms');
+            if (targetNode) targetNode.classList.add('node-highlight');
+        });
+    }
+
+    function setStep(stepIndex) {
+        currentStep = stepIndex;
+        // Cập nhật active class cho nút
+        const btns = document.querySelectorAll('.step-btn');
+        btns.forEach((btn, idx) => {
+            if (idx === stepIndex) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+        const step = steps[stepIndex];
+        // Điều chỉnh độ mờ của các đường
+        if (step.lines) {
+            Object.entries(step.lines).forEach(([lineId, opacity]) => {
+                const lineEl = document.getElementById(lineId);
+                if (lineEl) lineEl.style.opacity = opacity;
+            });
+        }
+        // Cập nhật nội dung info box
+        document.getElementById('info-text').innerHTML = step.info;
+        // Highlight các node liên quan
+        if (step.highlightNodes) {
+            highlightNodesByIds(step.highlightNodes);
+        } else {
+            highlightNodesByIds([]);
+        }
+    }
+
+    // Xử lý sự kiện click cho các node (tương tác chuyển step phù hợp)
+    function bindNodeEvents() {
+        const vlcNode = document.getElementById('g-vlc');
+        if (vlcNode) vlcNode.addEventListener('click', () => setStep(0));
+        const switchNode = document.getElementById('g-switch');
+        if (switchNode) switchNode.addEventListener('click', () => setStep(1));
+        const backendNode = document.getElementById('g-backend');
+        if (backendNode) backendNode.addEventListener('click', () => setStep(2));
+        const tvNodes = ['g-tv1', 'g-tv2', 'g-tv3'];
+        tvNodes.forEach(tv => {
+            const tvEl = document.getElementById(tv);
+            if (tvEl) tvEl.addEventListener('click', () => setStep(3));
+        });
+        const adminNode = document.getElementById('g-admin');
+        if (adminNode) adminNode.addEventListener('click', () => setStep(4));
+        
+        // PMS riêng: hiển thị thông tin sâu về PMS tích hợp (không reset step, nhưng vẫn hữu ích)
+        const pmsNode = document.getElementById('g-pms');
+        if (pmsNode) {
+            pmsNode.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Hiển thị thông tin chuyên sâu về PMS + giữ nguyên step highlight nhưng thay info tạm?
+                // Để trải nghiệm liền mạch: hiển thị nội dung PMS mà không làm mất active step hiện tại,
+                // nhưng người dùng dễ hiểu. Tốt nhất: cập nhật info-text nhưng không thay đổi opacity lines.
+                const pmsInfo = '<strong>🏨 Tích hợp PMS (Opera/Infor) trong IPTV Hotel:</strong> PMS gửi webhook hoặc qua API XML/SOAP tới Vella Backend khi có check-in. Backend cập nhật trạng thái phòng, gói kênh, và tạo JWT token cho TV. Nhờ đó khách xem được welcome video, thông báo ưu đãi buffet. Dữ liệu đồng bộ realtime giúp tự động khóa TV khi check-out. Đây là tiêu chuẩn trong ngành khách sạn 4-5 sao.';
+                const originalInfo = steps[currentStep]?.info;
+                document.getElementById('info-text').innerHTML = pmsInfo;
+                // sau 5 giây hoặc khi click bất kỳ step khác sẽ reset, nhưng nếu click tiếp step thì setStep sẽ ghi đè
+                // Tạo timeout khôi phục nếu không tương tác? nhưng dùng setStep ở các node khác sẽ thay thế. Đủ thông minh.
+                // Tạo optional: nếu click ra ngoài không sao. Cũng có thể thêm nút close nhẹ nhàng
+                // Thêm 1 indicator nhỏ: tạm thời hiểu rằng đang xem chi tiết PMS
+                const tempTimeout = setTimeout(() => {
+                    // chỉ khôi phục nếu info text hiện tại vẫn là pmsInfo (chưa bị thay đổi bởi setStep)
+                    if (document.getElementById('info-text').innerHTML === pmsInfo) {
+                        document.getElementById('info-text').innerHTML = steps[currentStep]?.info || steps[0].info;
+                    }
+                }, 8000);
+                // Lưu timeout để tránh conflict? Không quan trọng.
+                pmsNode._timeout = tempTimeout;
+            });
+        }
+    }
+
+    // Gán sự kiện cho các nút step
+    function bindStepButtons() {
+        const btns = document.querySelectorAll('.step-btn');
+        btns.forEach((btn, idx) => {
+            btn.addEventListener('click', () => {
+                setStep(idx);
+                // clear bất kỳ timeout PMS nào để tránh ghi đè
+                const pms = document.getElementById('g-pms');
+                if (pms && pms._timeout) clearTimeout(pms._timeout);
+            });
+        });
+    }
+
+    // Khởi tạo trạng thái mặc định step 0
+    function init() {
+        bindStepButtons();
+        bindNodeEvents();
+        setStep(0);
+    }
+
+    init();
+</script>
+</body>
+</html>

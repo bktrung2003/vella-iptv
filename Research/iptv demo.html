@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiến trúc hệ thống Hotel IPTV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+        }
+
+        /* Animations for data flow */
+        @keyframes flow-stream {
+            from { stroke-dashoffset: 40; }
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes flow-api {
+            from { stroke-dashoffset: 20; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        .path-stream {
+            stroke-dasharray: 10 10;
+            animation: flow-stream 1s linear infinite;
+        }
+
+        .path-api {
+            stroke-dasharray: 5 5;
+            animation: flow-api 1.5s linear infinite;
+        }
+
+        /* Smooth transitions */
+        .node, .flow-line {
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* Custom scrollbar for info box */
+        .info-scroll::-webkit-scrollbar { width: 6px; }
+        .info-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .info-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col items-center justify-center">
+
+    <div class="max-w-6xl w-full bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+        
+        <!-- Header & Controls -->
+        <div class="p-6 border-b border-slate-700 bg-slate-800/50">
+            <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent mb-4">
+                Luồng dữ liệu Hệ thống Hotel IPTV (Tách biệt Control & Data Plane)
+            </h2>
+            <div class="flex flex-wrap gap-2" id="btn-container">
+                <!-- Buttons injected via JS -->
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-0">
+            
+            <!-- SVG Diagram -->
+            <div class="lg:col-span-2 p-6 bg-slate-900 flex items-center justify-center relative overflow-hidden" style="min-height: 500px;">
+                <svg viewBox="0 0 800 500" class="w-full h-full max-w-full drop-shadow-lg">
+                    <defs>
+                        <!-- Arrow markers -->
+                        <marker id="arrow-stream" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                        </marker>
+                        <marker id="arrow-api" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+                        </marker>
+                        
+                        <!-- Gradients -->
+                        <linearGradient id="grad-video" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#2563eb" />
+                            <stop offset="100%" stop-color="#3b82f6" />
+                        </linearGradient>
+                        <linearGradient id="grad-server" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#059669" />
+                            <stop offset="100%" stop-color="#10b981" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- ================= PATHS (LINES) ================= -->
+                    <!-- Note: Drawn first so they appear behind nodes -->
+
+                    <!-- 1. Stream: Headend to Switch -->
+                    <path id="path-vlc-sw" class="flow-line path-stream" d="M 180 150 L 320 250" fill="none" stroke="#3b82f6" stroke-width="4" marker-end="url(#arrow-stream)" />
+                    
+                    <!-- 2. Stream: Switch to TVs -->
+                    <path id="path-sw-tv" class="flow-line path-stream" d="M 480 250 C 550 250, 600 150, 650 150 M 480 250 L 650 250 M 480 250 C 550 250, 600 350, 650 350" fill="none" stroke="#3b82f6" stroke-width="3" opacity="0.2" />
+
+                    <!-- 3. API: TV <-> Switch <-> Backend -->
+                    <path id="path-tv-api" class="flow-line path-api" d="M 650 160 C 600 160, 550 260, 480 260 M 650 260 L 480 260 M 650 360 C 600 360, 550 260, 480 260 M 400 280 L 400 380" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-api)" opacity="0.2" />
+
+                    <!-- 4. API: PMS/Admin <-> Backend -->
+                    <path id="path-pms-api" class="flow-line path-api" d="M 180 370 L 320 400 M 180 430 L 320 410" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-api)" opacity="0.2" />
+
+
+                    <!-- ================= NODES ================= -->
+
+                    <!-- HEADEND / VLC -->
+                    <g id="node-headend" class="node cursor-pointer" transform="translate(40, 110)">
+                        <rect width="140" height="80" rx="12" fill="url(#grad-video)" class="shadow-lg" />
+                        <rect width="140" height="80" rx="12" fill="none" stroke="#60a5fa" stroke-width="2" />
+                        <text x="70" y="35" fill="white" font-weight="bold" text-anchor="middle" font-size="14">VLC / Headend</text>
+                        <text x="70" y="55" fill="#bfdbfe" text-anchor="middle" font-size="11">RTSP/UDP/HLS</text>
+                        <text x="70" y="70" fill="#bfdbfe" text-anchor="middle" font-size="10">(Video Transcoder)</text>
+                    </g>
+
+                    <!-- NETWORK SWITCH -->
+                    <g id="node-switch" class="node cursor-pointer" transform="translate(320, 210)">
+                        <rect width="160" height="80" rx="12" fill="#334155" />
+                        <rect width="160" height="80" rx="12" fill="none" stroke="#94a3b8" stroke-width="2" />
+                        <circle cx="80" cy="40" r="25" fill="#1e293b" />
+                        <path d="M 70 30 L 90 50 M 90 30 L 70 50" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+                        <text x="80" y="20" fill="white" font-weight="bold" text-anchor="middle" font-size="14">L3 Core Switch</text>
+                        <text x="80" y="70" fill="#94a3b8" text-anchor="middle" font-size="11">VLAN & IGMP Snooping</text>
+                    </g>
+
+                    <!-- MIDDLEWARE / BACKEND -->
+                    <g id="node-backend" class="node cursor-pointer" transform="translate(320, 380)">
+                        <rect width="160" height="80" rx="12" fill="url(#grad-server)" />
+                        <rect width="160" height="80" rx="12" fill="none" stroke="#34d399" stroke-width="2" />
+                        <text x="80" y="35" fill="white" font-weight="bold" text-anchor="middle" font-size="14">Vella Middleware</text>
+                        <text x="80" y="55" fill="#a7f3d0" text-anchor="middle" font-size="11">FastAPI + Redis</text>
+                        <text x="80" y="70" fill="#a7f3d0" text-anchor="middle" font-size="10">(Control Plane)</text>
+                    </g>
+
+                    <!-- PMS -->
+                    <g id="node-pms" class="node cursor-pointer" transform="translate(40, 330)">
+                        <rect width="140" height="50" rx="8" fill="#78350f" />
+                        <rect width="140" height="50" rx="8" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                        <text x="70" y="22" fill="white" font-weight="bold" text-anchor="middle" font-size="13">Opera PMS</text>
+                        <text x="70" y="40" fill="#fcd34d" text-anchor="middle" font-size="11">Guest Info Sync</text>
+                    </g>
+
+                    <!-- ADMIN -->
+                    <g id="node-admin" class="node cursor-pointer" transform="translate(40, 400)">
+                        <rect width="140" height="50" rx="8" fill="#4c1d95" />
+                        <rect width="140" height="50" rx="8" fill="none" stroke="#a78bfa" stroke-width="1.5" />
+                        <text x="70" y="22" fill="white" font-weight="bold" text-anchor="middle" font-size="13">Admin Portal</text>
+                        <text x="70" y="40" fill="#ddd6fe" text-anchor="middle" font-size="11">Channel Manager</text>
+                    </g>
+
+                    <!-- TVs (Rooms) -->
+                    <g class="node cursor-pointer" id="node-tvs" transform="translate(650, 110)">
+                        <!-- TV 1 -->
+                        <g transform="translate(0, 0)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" stroke="#2dd4bf" stroke-width="1.5"/>
+                            <rect x="5" y="5" width="100" height="40" fill="#134e4a" rx="4"/>
+                            <text x="55" y="28" fill="white" font-size="12" font-weight="bold" text-anchor="middle">TV P.101</text>
+                            <text x="55" y="54" fill="#5eead4" font-size="10" text-anchor="middle">Next.js UI</text>
+                        </g>
+                        <!-- TV 2 -->
+                        <g transform="translate(0, 100)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" stroke="#2dd4bf" stroke-width="1.5"/>
+                            <rect x="5" y="5" width="100" height="40" fill="#134e4a" rx="4"/>
+                            <text x="55" y="28" fill="white" font-size="12" font-weight="bold" text-anchor="middle">TV P.102</text>
+                            <text x="55" y="54" fill="#5eead4" font-size="10" text-anchor="middle">Next.js UI</text>
+                        </g>
+                        <!-- TV 3 -->
+                        <g transform="translate(0, 200)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" stroke="#2dd4bf" stroke-width="1.5"/>
+                            <rect x="5" y="5" width="100" height="40" fill="#134e4a" rx="4"/>
+                            <text x="55" y="28" fill="white" font-size="12" font-weight="bold" text-anchor="middle">TV P.103</text>
+                            <text x="55" y="54" fill="#5eead4" font-size="10" text-anchor="middle">Next.js UI</text>
+                        </g>
+                    </g>
+                </svg>
+
+                <!-- Legend Overlay -->
+                <div class="absolute bottom-4 right-4 bg-slate-800/80 p-3 rounded-lg border border-slate-700 backdrop-blur-sm text-xs">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-1 bg-blue-500 rounded"></div>
+                        <span class="text-slate-300">Data Plane (Luồng Video)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 border-t-2 border-dashed border-emerald-500"></div>
+                        <span class="text-slate-300">Control Plane (API/Auth)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description Sidebar -->
+            <div class="p-6 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Chi tiết kỹ thuật
+                </h3>
+                
+                <div id="info-content" class="flex-1 overflow-y-auto info-scroll pr-2 space-y-4 text-sm text-slate-300 leading-relaxed">
+                    <!-- Content injected via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const steps = [
+    {
+        title: "1. Chuẩn bị Luồng Video (Headend)",
+        shortTitle: "1. Headend",
+        activeNodes: ['node-headend'],
+        activePaths: ['path-vlc-sw'],
+        html: `
+            <div class="p-3 bg-blue-900/30 border border-blue-800/50 rounded-lg">
+                <strong class="block text-blue-400 text-base mb-2">Vai trò của VLC / Headend Server</strong>
+                <p class="mb-2">Trong thực tế, đây là các bộ Transcoder/Encoder phần cứng hoặc phần mềm (như VLC, FFmpeg, Vitec).</p>
+                <ul class="list-disc pl-4 space-y-1">
+                    <li>Thu nhận tín hiệu từ chảo vệ tinh (DVB-S2), cáp (DVB-C) hoặc luồng IP ngoài.</li>
+                    <li>Giải mã và đóng gói lại thành các luồng <strong>Multicast (UDP/RTP)</strong> cho mạng LAN, hoặc chia nhỏ thành <strong>HLS (.m3u8)</strong> nếu dùng Edge Server.</li>
+                    <li>Đẩy liên tục luồng dữ liệu (Data Plane) này vào Mạng Lõi (Core Switch).</li>
+                </ul>
+            </div>
+        `
+    },
+    {
+        title: "2. Phân phối qua Network Lõi",
+        shortTitle: "2. Core Switch",
+        activeNodes: ['node-headend', 'node-switch'],
+        activePaths: ['path-vlc-sw'],
+        html: `
+            <div class="p-3 bg-slate-700/50 border border-slate-600 rounded-lg">
+                <strong class="block text-white text-base mb-2">Switch vật lý & Cơ chế Multicast</strong>
+                <p class="mb-2">Đây là xương sống của hệ thống IPTV. Switch không hiểu nội dung video, nó chỉ điều phối các gói tin IP.</p>
+                <p class="mb-2 text-emerald-400"><strong>Điểm mấu chốt: IGMP Snooping</strong></p>
+                <p>Nếu dùng Multicast (phổ biến nhất cho Hotel), Switch phải bật tính năng <em>IGMP Snooping</em>. Nghĩa là: Khi TV 101 bật Kênh HBO, Switch chỉ gửi gói tin của HBO đến cổng cắm TV 101. Các cổng khác không bị ngập lụt băng thông.</p>
+            </div>
+        `
+    },
+    {
+        title: "3. Middleware xử lý API (Control Plane)",
+        shortTitle: "3. Middleware",
+        activeNodes: ['node-switch', 'node-backend', 'node-tvs'],
+        activePaths: ['path-tv-api'],
+        html: `
+            <div class="p-3 bg-emerald-900/30 border border-emerald-800/50 rounded-lg">
+                <strong class="block text-emerald-400 text-base mb-2">Giao tiếp API (Không chứa Video)</strong>
+                <p class="mb-2">Khi khách bật TV lên, App (Next.js) trên TV sẽ không có video ngay. Nó gọi API HTTP(s) về Vella Backend.</p>
+                <ul class="list-disc pl-4 space-y-1">
+                    <li><strong>Auth:</strong> "Tôi là MAC Address 00:1A:.., tôi ở phòng nào?"</li>
+                    <li><strong>Config:</strong> Backend trả về UI Theme, Tên khách, Lời chào.</li>
+                    <li><strong>Channel List:</strong> Backend query Redis cache trả về JSON chứa danh sách kênh kèm theo <strong>URL của luồng Video</strong> (vd: <code>udp://@239.1.1.1:5000</code> hoặc URL HLS).</li>
+                </ul>
+            </div>
+        `
+    },
+    {
+        title: "4. TV Play Video trực tiếp",
+        shortTitle: "4. TV Play",
+        activeNodes: ['node-headend', 'node-switch', 'node-tvs'],
+        activePaths: ['path-vlc-sw', 'path-sw-tv'],
+        html: `
+            <div class="p-3 bg-blue-900/30 border border-blue-800/50 rounded-lg">
+                <strong class="block text-blue-400 text-base mb-2">Luồng Video (Data Plane)</strong>
+                <p class="mb-2">Đây là sự khác biệt lớn nhất: <strong>Video KHÔNG đi qua Backend.</strong></p>
+                <p class="mb-2">Sau khi nhận được URL từ bước 3, Player trên TV (Shaka, HLS.js, hoặc Native UDP Player) sẽ gửi lệnh IGMP Join (nếu là Multicast) trực tiếp tới Switch để xin luồng, hoặc HTTP GET (nếu là HLS) thẳng tới Headend/CDN.</p>
+                <p class="text-xs text-slate-400 mt-2 italic">* Kiến trúc này đảm bảo Backend (FastAPI) có thể phục vụ 10,000 TV mà không lo về băng thông mạng, vì băng thông video do Switch vật lý chịu tải.</p>
+            </div>
+        `
+    },
+    {
+        title: "5. Quản trị & Tích hợp PMS",
+        shortTitle: "5. PMS/Admin",
+        activeNodes: ['node-backend', 'node-pms', 'node-admin', 'node-tvs'],
+        activePaths: ['path-pms-api', 'path-tv-api'],
+        html: `
+            <div class="p-3 bg-amber-900/30 border border-amber-800/50 rounded-lg">
+                <strong class="block text-amber-400 text-base mb-2">Vận hành tự động</strong>
+                <p class="mb-2">Backend lắng nghe các tín hiệu điều khiển từ bên ngoài:</p>
+                <ul class="list-disc pl-4 space-y-2">
+                    <li><strong>PMS (Opera/Infor):</strong> Gửi webhook báo "Phòng 101 vừa Check-in, tên Mr. John". Backend lập tức gửi WebSocket hoặc Push Notification xuống TV P.101 để reset UI và hiện lời chào.</li>
+                    <li><strong>Admin Portal:</strong> Kỹ thuật viên thao tác đổi luồng IP của kênh VTV1, cấu hình lập tức lưu vào DB và Redis, các TV gọi API sẽ tự lấy luồng mới.</li>
+                </ul>
+            </div>
+        `
+    }
+];
+
+function initDiagram() {
+    const btnContainer = document.getElementById('btn-container');
+    const nodes = document.querySelectorAll('.node');
+    const paths = document.querySelectorAll('.flow-line');
+
+    // Generate Buttons
+    steps.forEach((step, index) => {
+        const btn = document.createElement('button');
+        btn.className = `px-4 py-2 text-sm font-medium rounded-lg transition-colors border border-slate-600 
+                         ${index === 0 ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`;
+        btn.innerText = step.shortTitle;
+        btn.onclick = () => renderStep(index);
+        btnContainer.appendChild(btn);
+    });
+
+    renderStep(0); // Start at step 1
+}
+
+function renderStep(index) {
+    const step = steps[index];
+    const buttons = document.getElementById('btn-container').children;
+
+    // Update buttons
+    Array.from(buttons).forEach((btn, i) => {
+        if (i === index) {
+            btn.className = `px-4 py-2 text-sm font-medium rounded-lg transition-colors border bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/30`;
+        } else {
+            btn.className = `px-4 py-2 text-sm font-medium rounded-lg transition-colors border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700`;
+        }
+    });
+
+    // Update Info Content
+    const infoContent = document.getElementById('info-content');
+    infoContent.innerHTML = step.html;
+
+    // Dim all nodes and paths
+    document.querySelectorAll('.node').forEach(node => {
+        node.style.opacity = '0.3';
+        node.style.filter = 'grayscale(80%)';
+    });
+    document.querySelectorAll('.flow-line').forEach(path => {
+        path.style.opacity = '0.05';
+    });
+
+    // Highlight active nodes and paths
+    step.activeNodes.forEach(nodeId => {
+        const el = document.getElementById(nodeId);
+        if(el) {
+            el.style.opacity = '1';
+            el.style.filter = 'grayscale(0%)';
+        }
+    });
+
+    step.activePaths.forEach(pathId => {
+        const el = document.getElementById(pathId);
+        if(el) el.style.opacity = '1';
+    });
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', initDiagram);
+</script>
+
+</body>
+</html>

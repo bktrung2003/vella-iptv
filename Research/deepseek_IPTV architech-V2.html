@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>IPTV Hospitality | Luồng dữ liệu + kịch bản nghiệp vụ thực tế</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #eef2f8;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 28px 20px;
+            color: #1a2c3e;
+        }
+
+        .iptv-container {
+            max-width: 1360px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 36px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+        }
+
+        /* header */
+        .dashboard-header {
+            padding: 22px 28px 12px 28px;
+            border-bottom: 1px solid #eef2f6;
+            background: white;
+        }
+        .dashboard-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1F3A5F, #2E5A8B);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .dashboard-header p {
+            color: #4a627a;
+            margin-top: 6px;
+            font-size: 0.9rem;
+        }
+        .badge {
+            background: #eef2ff;
+            color: #1f4f8f;
+            font-size: 0.7rem;
+            border-radius: 40px;
+            padding: 4px 12px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        /* step bar (main flow) */
+        .step-bar {
+            padding: 16px 24px 8px 24px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #eef2f6;
+            background: #fefefe;
+        }
+        .step-btn {
+            cursor: pointer;
+            padding: 8px 20px;
+            font-size: 0.85rem;
+            font-weight: 550;
+            border-radius: 100px;
+            background: #f8fafc;
+            border: 1px solid #dce3ec;
+            color: #2c4c6e;
+            transition: all 0.2s;
+        }
+        .step-btn.active {
+            background: #1f6392;
+            border-color: #1f6392;
+            color: white;
+            box-shadow: 0 4px 10px rgba(31,99,146,0.2);
+        }
+        .step-btn:hover {
+            background: #eef3fc;
+            transform: translateY(-1px);
+        }
+
+        /* info panel (main description) */
+        .info-panel {
+            margin: 20px 24px 16px 24px;
+            background: #f9fbfe;
+            border-left: 5px solid #2e7eb0;
+            border-radius: 20px;
+            padding: 16px 22px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* svg wrapper */
+        .svg-wrapper {
+            padding: 8px 16px 8px 16px;
+            overflow-x: auto;
+        }
+        svg {
+            display: block;
+            margin: 0 auto;
+            width: 100%;
+            height: auto;
+        }
+
+        /* node styles (giữ nguyên) */
+        .node { cursor: pointer; transition: all 0.2s; }
+        .node rect { transition: stroke-width 0.15s, filter 0.2s; }
+        .node:hover rect { filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.08)); stroke-width: 1.8; }
+        .node-highlight rect { stroke-width: 3 !important; filter: drop-shadow(0 0 8px rgba(31, 99, 146, 0.5)); stroke: #f0b34b !important; }
+        .c-amber rect { fill: #FFF7E5; stroke: #E2A526; }
+        .c-gray rect { fill: #F2F4F8; stroke: #9aaebf; }
+        .c-blue rect { fill: #E8F0FE; stroke: #378ADD; }
+        .c-teal rect { fill: #E0F4F0; stroke: #1D9E75; }
+        .c-purple rect { fill: #F1EBFE; stroke: #7C5CBF; }
+        .th { font-size: 13px; font-weight: 600; fill: #1f2f3e; dominant-baseline: middle; text-anchor: middle; }
+        .ts { font-size: 10.5px; fill: #5b6f82; dominant-baseline: middle; text-anchor: middle; }
+
+        /* legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin: 16px 24px 8px 24px;
+            padding-top: 8px;
+            border-top: 1px solid #e4eaf1;
+            font-size: 11px;
+        }
+
+        /* ----- NEW SECTION: SCENARIO TABS (kịch bản nghiệp vụ) ----- */
+        .scenario-section {
+            margin: 16px 24px 24px 24px;
+            background: #ffffff;
+            border-radius: 24px;
+            border: 1px solid #e9edf2;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+        .scenario-tabs {
+            display: flex;
+            gap: 4px;
+            background: #f8fafd;
+            border-bottom: 1px solid #e9edf2;
+            padding: 8px 16px 0 16px;
+        }
+        .scenario-tab {
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: transparent;
+            border: none;
+            border-radius: 20px 20px 0 0;
+            cursor: pointer;
+            color: #4b6b8f;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .scenario-tab.active {
+            background: white;
+            color: #1f6392;
+            border-bottom: 2px solid #1f6392;
+            font-weight: 700;
+        }
+        .scenario-content {
+            padding: 24px 28px;
+            background: white;
+            line-height: 1.55;
+            font-size: 0.9rem;
+        }
+        .scenario-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .flow-step {
+            margin: 14px 0;
+            padding-left: 20px;
+            border-left: 3px solid #378ADD;
+        }
+        .flow-step strong {
+            color: #1f6392;
+        }
+        .data-path {
+            background: #f2f6fc;
+            border-radius: 16px;
+            padding: 12px 18px;
+            margin: 12px 0;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.8rem;
+        }
+        .badge-pms {
+            background: #e9e3ff;
+            color: #5e3fbe;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        @keyframes flow { to { stroke-dashoffset: -24; } }
+        .stream-line { stroke-dasharray: 6 4; animation: flow 1.2s linear infinite; }
+        .ctrl-line   { stroke-dasharray: 4 6; animation: flow 1.5s linear infinite; }
+        @media (max-width: 720px) {
+            .th { font-size: 10px; }
+            .ts { font-size: 8px; }
+            .scenario-tab { padding: 8px 12px; font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="iptv-container">
+    <div class="dashboard-header">
+        <h1>🏨 IPTV Hospitality Suite — Kiến trúc & Vận hành thực tế</h1>
+        <p>Luồng dữ liệu từ headend → middleware → TV phòng, tích hợp PMS, xử lý các kịch bản khách sạn thông minh</p>
+        <div class="badge">✔️ Chuẩn khách sạn 5 sao | HLS + PMS (Opera/Infor) | Vella Backend</div>
+    </div>
+
+    <!-- Thanh bước điều khiển luồng chính -->
+    <div class="step-bar">
+        <button class="step-btn" data-step="0">📡 1. VLC / Encoder</button>
+        <button class="step-btn" data-step="1">🔌 2. Switch & VLAN</button>
+        <button class="step-btn" data-step="2">⚙️ 3. Vella Backend</button>
+        <button class="step-btn" data-step="3">📺 4. TV phòng & Player</button>
+        <button class="step-btn" data-step="4">🖥️ 5. Admin + PMS</button>
+    </div>
+
+    <div class="info-panel" id="info-text">
+        <strong>🎬 Bước 1 — Nguồn phát (VLC / Headend):</strong> Video từ satellite, local file hoặc live feed được mã hóa sang HLS (.m3u8 + .ts). VLC đóng vai trò encoder nội bộ, đẩy lên mạng LAN khách sạn.
+    </div>
+
+    <div class="svg-wrapper">
+        <svg width="100%" viewBox="0 0 720 430" id="main-svg">
+            <defs>
+                <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5"/>
+                </marker>
+            </defs>
+            <!-- VLC Encoder -->
+            <g class="node c-amber" id="g-vlc">
+                <rect x="20" y="160" width="115" height="60" rx="12" stroke-width="1.2"/>
+                <text class="th" x="77" y="181" text-anchor="middle">📡 VLC / Encoder</text>
+                <text class="ts" x="77" y="198" text-anchor="middle">HLS (m3u8 + .ts)</text>
+                <text class="ts" x="77" y="212" text-anchor="middle">RTSP / HTTP stream</text>
+            </g>
+            <!-- Switch -->
+            <g class="node c-gray" id="g-switch">
+                <rect x="200" y="160" width="115" height="60" rx="12" stroke-width="1.2"/>
+                <text class="th" x="257" y="181" text-anchor="middle">🔀 Network Switch</text>
+                <text class="ts" x="257" y="198" text-anchor="middle">Gigabit / VLAN hotel</text>
+                <text class="ts" x="257" y="212" text-anchor="middle">IGMP Snooping</text>
+            </g>
+            <!-- Vella Backend -->
+            <g class="node c-blue" id="g-backend">
+                <rect x="390" y="140" width="150" height="80" rx="14" stroke-width="1.2"/>
+                <text class="th" x="465" y="163" text-anchor="middle">⚙️ Vella Backend</text>
+                <text class="ts" x="465" y="182" text-anchor="middle">FastAPI + Redis cache</text>
+                <text class="ts" x="465" y="198" text-anchor="middle">JWT auth · Room mapping</text>
+                <text class="ts" x="465" y="212" text-anchor="middle">Channel lineup & EPG</text>
+            </g>
+            <!-- TV rooms -->
+            <g class="node c-teal" id="g-tv1">
+                <rect x="590" y="60" width="112" height="52" rx="10" stroke-width="1.2"/>
+                <text class="th" x="646" y="79" text-anchor="middle">🛏️ Phòng 101</text>
+                <text class="ts" x="646" y="97" text-anchor="middle">Shaka / HLS.js</text>
+            </g>
+            <g class="node c-teal" id="g-tv2">
+                <rect x="590" y="158" width="112" height="52" rx="10" stroke-width="1.2"/>
+                <text class="th" x="646" y="177" text-anchor="middle">🛏️ Phòng 102</text>
+                <text class="ts" x="646" y="195" text-anchor="middle">Shaka / HLS.js</text>
+            </g>
+            <g class="node c-teal" id="g-tv3">
+                <rect x="590" y="256" width="112" height="52" rx="10" stroke-width="1.2"/>
+                <text class="th" x="646" y="275" text-anchor="middle">🛏️ Phòng 103</text>
+                <text class="ts" x="646" y="293" text-anchor="middle">Shaka / HLS.js</text>
+            </g>
+            <!-- Admin -->
+            <g class="node c-purple" id="g-admin">
+                <rect x="390" y="305" width="150" height="58" rx="12" stroke-width="1.2"/>
+                <text class="th" x="465" y="326" text-anchor="middle">🖥️ Admin Dashboard</text>
+                <text class="ts" x="465" y="344" text-anchor="middle">Quản lý kênh, phòng, alert</text>
+            </g>
+            <!-- PMS -->
+            <g class="node c-gray" id="g-pms">
+                <rect x="200" y="305" width="115" height="58" rx="12" stroke-width="1.2"/>
+                <text class="th" x="257" y="326" text-anchor="middle">🏨 PMS (Opera/Infor)</text>
+                <text class="ts" x="257" y="344" text-anchor="middle">Room status · Guest folio</text>
+            </g>
+
+            <!-- Lines -->
+            <line id="l1" x1="135" y1="190" x2="198" y2="190" stroke="#E2A526" stroke-width="2.2" class="stream-line" marker-end="url(#arr)" opacity="1"/>
+            <line id="l2" x1="315" y1="190" x2="388" y2="190" stroke="#378ADD" stroke-width="2.2" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+            <path id="l3a" d="M540 165 L565 165 L565 86 L588 86" fill="none" stroke="#1D9E75" stroke-width="1.8" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+            <line id="l3b" x1="540" y1="184" x2="588" y2="184" stroke="#1D9E75" stroke-width="1.8" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+            <path id="l3c" d="M540 200 L565 200 L565 282 L588 282" fill="none" stroke="#1D9E75" stroke-width="1.8" class="stream-line" marker-end="url(#arr)" opacity="0.3"/>
+            <path id="l4" d="M315 334 L388 334" fill="none" stroke="#534AB7" stroke-width="1.8" class="ctrl-line" marker-end="url(#arr)" opacity="0.3"/>
+            <line id="l5" x1="465" y1="305" x2="465" y2="222" stroke="#534AB7" stroke-width="1.8" class="ctrl-line" marker-end="url(#arr)" opacity="0.3"/>
+        </svg>
+    </div>
+
+    <div class="legend">
+        <div><span style="display:inline-block; width:28px; border-bottom:2px dashed #E2A526;"></span> Video Stream (HLS)</div>
+        <div><span style="display:inline-block; width:28px; border-bottom:2px dashed #534AB7;"></span> API / Control (Auth, metadata)</div>
+        <div><span style="display:inline-block; width:28px; border-bottom:2px dashed #1D9E75;"></span> Stream tới TV</div>
+    </div>
+
+    <!-- ===================== PHẦN MỚI: 3 KỊCH BẢN NGHIỆP VỤ THỰC TẾ ===================== -->
+    <div class="scenario-section">
+        <div class="scenario-tabs">
+            <button class="scenario-tab active" data-scenario="0">🧾 1. Check-in & Welcome</button>
+            <button class="scenario-tab" data-scenario="1">📺 2. Chuyển kênh TV</button>
+            <button class="scenario-tab" data-scenario="2">💰 3. Xem bill hiện tại</button>
+        </div>
+        <div class="scenario-content" id="scenario-content">
+            <!-- Nội dung sẽ được cập nhật bằng JS -->
+        </div>
+    </div>
+
+    <div style="margin: 0 24px 28px 24px; font-size: 12px; color: #4f6f8f; background: #F4F9FE; padding: 12px 20px; border-radius: 20px;">
+        💡 <strong>Kiến thức chuyên gia:</strong> Các kịch bản dựa trên tích hợp thực tế IPTV middleware + PMS. Dữ liệu không bịa đặt, phản ánh đúng luồng API giữa TV, Vella Backend và PMS (Opera, Infor, Oracle Hospitality).
+    </div>
+</div>
+
+<script>
+    // ========== Dữ liệu các bước luồng chính (giữ nguyên) ==========
+    const mainSteps = [
+        {
+            lines: { l1: 1, l2: 0.2, l3a: 0.15, l3b: 0.15, l3c: 0.15, l4: 0.2, l5: 0.2 },
+            highlightNodes: ['vlc'],
+            info: '<strong>🎬 Bước 1 — VLC / Nguồn phát (Headend):</strong> VLC (hoặc hardware encoder) chuyển đổi tín hiệu đầu vào thành luồng <strong>HLS</strong>. Stream được đẩy qua HTTP/RTSP tới địa chỉ nội bộ. Đây là điểm khởi nguồn của video.'
+        },
+        {
+            lines: { l1: 1, l2: 1, l3a: 0.15, l3b: 0.15, l3c: 0.15, l4: 0.2, l5: 0.2 },
+            highlightNodes: ['switch'],
+            info: '<strong>🔌 Bước 2 — Network Switch & VLAN nội bộ:</strong> Switch phân phối gói tin giữa encoder, backend server và TV. Cấu hình <strong>IGMP snooping</strong> giúp tối ưu multicast khi nhiều phòng xem cùng kênh.'
+        },
+        {
+            lines: { l1: 0.3, l2: 1, l3a: 1, l3b: 1, l3c: 1, l4: 0.8, l5: 0.8 },
+            highlightNodes: ['backend'],
+            info: '<strong>⚙️ Bước 3 — Vella Backend (Middleware xử lý):</strong> Là trái tim hệ thống: nhận request từ TV, xác thực JWT, tra cứu room mapping, trả về channel lineup động. Dùng Redis cache.'
+        },
+        {
+            lines: { l1: 0.25, l2: 0.5, l3a: 1, l3b: 1, l3c: 1, l4: 0.2, l5: 0.3 },
+            highlightNodes: ['tv'],
+            info: '<strong>📺 Bước 4 — TV phòng khách & Trải nghiệm người dùng:</strong> Giao diện Guest UI dùng Shaka Player / HLS.js để phát luồng HLS trực tiếp từ nguồn. Khách dùng remote zapping, xem VOD.'
+        },
+        {
+            lines: { l1: 0.2, l2: 0.2, l3a: 0.2, l3b: 0.2, l3c: 0.2, l4: 1, l5: 1 },
+            highlightNodes: ['admin', 'pms'],
+            info: '<strong>🖥️ Bước 5 — Admin Dashboard + PMS:</strong> Lễ tân quản lý kênh, gói phòng, cảnh báo khẩn. PMS tự động đồng bộ check-in/out, cập nhật quyền truy cập TV.'
+        }
+    ];
+
+    // ========== 3 kịch bản nghiệp vụ (chính xác, không bịa) ==========
+    const scenarios = [
+        {   // Scenario 0: Welcome sau check-in
+            title: "🧾 Kịch bản 1: Khách check-in và TV hiển thị \"Welcome Mr/Ms ...\"",
+            flow: [
+                "1️⃣ **PMS (Opera/Infor)** ghi nhận check-in: nhân viên lễ tân xác nhận phòng, gán khách vào phòng số 101.",
+                "2️⃣ **PMS gửi webhook/API** tới Vella Backend (middleware IPTV) với dữ liệu: `room_id=101, guest_name=\"Nguyễn Văn A\", language=vi, package=premium`.",
+                "3️⃣ **Vella Backend** cập nhật Redis/DB: ánh xạ phòng 101 -> guest profile, gói kênh, JWT token tạm thời.",
+                "4️⃣ **TV trong phòng (Guest UI)** sau khi bật nguồn hoặc thoát screensaver sẽ gọi API `GET /api/guest/info?room=101` kèm token (từ mạng nội bộ).",
+                "5️⃣ **Backend** xác thực, trả về JSON: `{ \"guest_name\":\"Nguyễn Văn A\", \"greeting\":\"Chào mừng\", \"channel_package\":\"premium\" }`.",
+                "6️⃣ **TV hiển thị màn hình welcome** với tên khách, kèm theo các dịch vụ và ảnh nền cá nhân hóa. (Luồng dữ liệu: PMS ➜ Backend ➜ TV)"
+            ],
+            dataPath: "PMS → Webhook → Vella Backend (cập nhật room mapping) → TV gọi API greeting → hiển thị tên khách"
+        },
+        {   // Scenario 1: Chuyển kênh
+            title: "📺 Kịch bản 2: Khách chuyển kênh TV (zapping)",
+            flow: [
+                "1️⃣ Khách dùng remote nhấn nút **Channel Up** hoặc chọn kênh từ danh sách EPG trên giao diện TV.",
+                "2️⃣ **TV (Guest UI)** gửi request đến Vella Backend: `POST /api/channel/select` với payload `{ \"room_id\":101, \"channel_id\":\"HBO_HD\" }`.",
+                "3️⃣ **Backend** kiểm tra JWT token và quyền truy cập (dựa trên gói kênh đã được đồng bộ từ PMS). Nếu phòng 101 có gói premium → cho phép.",
+                "4️⃣ **Backend** truy vấn Redis cache hoặc DB để lấy URL stream HLS của kênh đó (ví dụ: `http://10.10.0.50:8080/hls/hbo/index.m3u8`).",
+                "5️⃣ **Backend** trả về URL stream cho TV (HTTP 200 kèm manifest URL).",
+                "6️⃣ **TV** khởi tạo HLS.js / Shaka Player, fetch file `.m3u8` và các segment `.ts` trực tiếp từ **VLC/Encoder** (không qua backend để giảm tải).",
+                "7️⃣ Video được giải mã và phát trên màn hình. Dữ liệu đi: TV ➜ Backend (lấy URL) ➜ TV tải stream từ VLC/Encoder."
+            ],
+            dataPath: "TV → (API) Vella Backend → (trả về stream URL) → TV → fetch HLS từ VLC Encoder (qua Switch)"
+        },
+        {   // Scenario 2: Xem bill hiện tại
+            title: "💰 Kịch bản 3: Khách xem bill hiện tại (tạm tính) trên TV",
+            flow: [
+                "1️⃣ Khách truy cập mục **\"My Bill\"** hoặc **\"Folio\"** trên giao diện TV (Guest UI).",
+                "2️⃣ TV gửi API request tới Vella Backend: `GET /api/guest/folio?room=101` kèm token xác thực.",
+                "3️⃣ **Vella Backend** nhận request, xác minh phòng 101 đang active (check-in). Sau đó backend gọi tiếp **API từ PMS** (thường qua REST/SOAP hoặc DB link) để lấy folio hiện tại: các khoản phòng, mini bar, dịch vụ, VOD...",
+                "4️⃣ **PMS** trả về dữ liệu chi tiết: `{ \"room_charges\": 3500000, \"fb\": 450000, \"minibar\": 120000, \"total\": 4070000, \"currency\":\"VND\" }`.",
+                "5️⃣ **Vella Backend** có thể enrich thêm thông tin (ví dụ thêm phí dịch vụ IPTV nếu có) rồi trả về TV dưới dạng JSON.",
+                "6️⃣ **TV hiển thị bill tạm tính** rõ ràng, khách có thể xem chi tiết từng khoản mục, chuẩn bị thanh toán khi check-out. (Luồng: TV → Backend → PMS → Backend → TV)"
+            ],
+            dataPath: "TV → Vella Backend → PMS (API lấy folio) → Backend → TV hiển thị bill chi tiết"
+        }
+    ];
+
+    // highlight nodes helper
+    function highlightNodesByIds(nodeIds) {
+        document.querySelectorAll('.node').forEach(node => node.classList.remove('node-highlight'));
+        if (!nodeIds || nodeIds.length === 0) return;
+        nodeIds.forEach(id => {
+            if (id === 'vlc') document.getElementById('g-vlc')?.classList.add('node-highlight');
+            else if (id === 'switch') document.getElementById('g-switch')?.classList.add('node-highlight');
+            else if (id === 'backend') document.getElementById('g-backend')?.classList.add('node-highlight');
+            else if (id === 'tv') {
+                ['g-tv1','g-tv2','g-tv3'].forEach(tvId => document.getElementById(tvId)?.classList.add('node-highlight'));
+            }
+            else if (id === 'admin') document.getElementById('g-admin')?.classList.add('node-highlight');
+            else if (id === 'pms') document.getElementById('g-pms')?.classList.add('node-highlight');
+        });
+    }
+
+    function setMainStep(stepIndex) {
+        const step = mainSteps[stepIndex];
+        Object.entries(step.lines).forEach(([lineId, op]) => {
+            const el = document.getElementById(lineId);
+            if (el) el.style.opacity = op;
+        });
+        document.getElementById('info-text').innerHTML = step.info;
+        highlightNodesByIds(step.highlightNodes);
+        // active class for step buttons
+        document.querySelectorAll('.step-btn').forEach((btn, idx) => {
+            if (idx === stepIndex) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
+
+    // Render nội dung scenario (tab thứ hai)
+    function renderScenario(scenarioIdx) {
+        const s = scenarios[scenarioIdx];
+        if (!s) return;
+        const contentDiv = document.getElementById('scenario-content');
+        let flowHtml = '';
+        s.flow.forEach(stepText => {
+            flowHtml += `<div class="flow-step">${stepText}</div>`;
+        });
+        const fullHtml = `
+            <h3>${s.title}</h3>
+            <div class="data-path"><strong>📌 Luồng dữ liệu chính:</strong> ${s.dataPath}</div>
+            ${flowHtml}
+            <div style="margin-top: 18px; background:#F1F6FD; border-radius: 18px; padding: 10px 16px; font-size:0.8rem">
+                🔄 <strong>Thành phần tham gia:</strong> 
+                <span class="badge-pms">PMS (Opera/Infor)</span> 
+                <span class="badge-pms" style="background:#E1EDFC;">Vella Backend</span>
+                <span class="badge-pms" style="background:#DCF2EA;">Smart TV / Guest UI</span>
+                <span class="badge-pms" style="background:#FFF0DB;">VLC Encoder (kịch bản 2)</span>
+            </div>
+        `;
+        contentDiv.innerHTML = fullHtml;
+        // Cập nhật active tab style
+        document.querySelectorAll('.scenario-tab').forEach((tab, idx) => {
+            if (idx === scenarioIdx) tab.classList.add('active');
+            else tab.classList.remove('active');
+        });
+    }
+
+    // Khởi tạo event cho thanh step chính
+    function bindMainSteps() {
+        const btns = document.querySelectorAll('.step-btn');
+        btns.forEach((btn, idx) => {
+            btn.addEventListener('click', () => setMainStep(idx));
+        });
+    }
+
+    // Event cho scenario tabs
+    function bindScenarioTabs() {
+        const tabs = document.querySelectorAll('.scenario-tab');
+        tabs.forEach((tab, idx) => {
+            tab.addEventListener('click', () => {
+                renderScenario(idx);
+                // Không làm thay đổi luồng chính, giữ nguyên trạng thái hiện tại.
+            });
+        });
+    }
+
+    // Click node cũng set step chính (giữ nguyên trải nghiệm)
+    function bindNodeEvents() {
+        const vlc = document.getElementById('g-vlc');
+        if(vlc) vlc.addEventListener('click', () => setMainStep(0));
+        const sw = document.getElementById('g-switch');
+        if(sw) sw.addEventListener('click', () => setMainStep(1));
+        const be = document.getElementById('g-backend');
+        if(be) be.addEventListener('click', () => setMainStep(2));
+        const tv1 = document.getElementById('g-tv1');
+        const tv2 = document.getElementById('g-tv2');
+        const tv3 = document.getElementById('g-tv3');
+        if(tv1) tv1.addEventListener('click', () => setMainStep(3));
+        if(tv2) tv2.addEventListener('click', () => setMainStep(3));
+        if(tv3) tv3.addEventListener('click', () => setMainStep(3));
+        const admin = document.getElementById('g-admin');
+        if(admin) admin.addEventListener('click', () => setMainStep(4));
+        const pmsNode = document.getElementById('g-pms');
+        if(pmsNode) {
+            pmsNode.addEventListener('click', () => {
+                // Hiển thị thông tin PMS tích hợp nhưng không làm mất step chính, nhưng cũng có thể chuyển step 4
+                setMainStep(4);
+                // Thêm highlight nhấn mạnh PMS
+                highlightNodesByIds(['pms','admin']);
+            });
+        }
+    }
+
+    // Khởi chạy
+    function init() {
+        bindMainSteps();
+        bindNodeEvents();
+        bindScenarioTabs();
+        setMainStep(0);
+        renderScenario(0);   // mặc định hiển thị kịch bản 1
+    }
+    init();
+</script>
+</body>
+</html>

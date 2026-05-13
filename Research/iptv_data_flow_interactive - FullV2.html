@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Master - Data Flow & JSON Detail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; 
+            color: #f8fafc;
+        }
+
+        .font-mono {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Animations for data flow */
+        @keyframes move-particle {
+            0% { offset-distance: 0%; opacity: 0; transform: scale(0.5); }
+            10% { opacity: 1; transform: scale(1.2); }
+            90% { opacity: 1; transform: scale(1.2); }
+            100% { offset-distance: 100%; opacity: 0; transform: scale(0.5); }
+        }
+
+        .flow-line {
+            stroke-dasharray: 6 6;
+            transition: all 0.5s ease;
+        }
+
+        .particle {
+            r: 5;
+            filter: drop-shadow(0 0 6px currentColor);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .particle-active {
+            animation: move-particle 3s linear infinite;
+        }
+
+        .particle-active-fast {
+            animation: move-particle 1.5s linear infinite;
+        }
+        
+        .particle-active-medium {
+            animation: move-particle 2s linear infinite;
+        }
+
+        .node {
+            transition: all 0.5s ease-in-out;
+        }
+
+        .info-scroll::-webkit-scrollbar { width: 6px; }
+        .info-scroll::-webkit-scrollbar-track { background: #0f172a; }
+        .info-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .info-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col items-center justify-center">
+
+    <div class="max-w-[1400px] w-full bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-700">
+        
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-700 bg-slate-800/80 backdrop-blur-sm sticky top-0 z-10">
+            <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 via-emerald-400 to-amber-400 bg-clip-text text-transparent mb-4">
+                Kiến trúc IPTV Cấp Doanh Nghiệp & Giải phẫu Data Flow
+            </h2>
+            <div class="flex flex-wrap gap-2" id="btn-container"></div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-0 h-[650px]">
+            
+            <!-- SVG Diagram (Col span 3) -->
+            <div class="lg:col-span-3 p-6 bg-slate-900 flex items-center justify-center relative overflow-hidden h-full">
+                <svg id="main-svg" viewBox="0 0 800 550" class="w-full h-full max-w-full drop-shadow-2xl">
+                    <defs>
+                        <linearGradient id="grad-video" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#2563eb" />
+                            <stop offset="100%" stop-color="#1d4ed8" />
+                        </linearGradient>
+                        <linearGradient id="grad-vella" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#10b981" />
+                            <stop offset="100%" stop-color="#047857" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Base Connections (Visible Lines) -->
+                    <!-- Opera <-> Vella -->
+                    <path id="path-opera-vella" d="M 180 380 L 320 380" fill="none" stroke="#f59e0b" stroke-width="2" class="flow-line opacity-20" />
+                    <path id="path-vella-opera" d="M 320 400 L 180 400" fill="none" stroke="#f59e0b" stroke-width="2" class="flow-line opacity-20" />
+
+                    <!-- Vella <-> Switch -->
+                    <path id="path-vella-sw" d="M 400 350 L 400 250" fill="none" stroke="#10b981" stroke-width="2" class="flow-line opacity-20" />
+                    
+                    <!-- Switch <-> TVs (API lines) -->
+                    <path id="path-sw-tv101" d="M 480 215 C 550 215, 600 100, 650 100" fill="none" stroke="#64748b" stroke-width="2" class="flow-line opacity-20" />
+                    <path id="path-sw-tv102" d="M 480 215 L 650 215" fill="none" stroke="#64748b" stroke-width="2" class="flow-line opacity-20" />
+                    <path id="path-sw-tv103" d="M 480 215 C 550 215, 600 330, 650 330" fill="none" stroke="#64748b" stroke-width="2" class="flow-line opacity-20" />
+
+                    <!-- Headend -> Switch (Video lines) -->
+                    <path id="path-headend-sw" d="M 180 100 L 320 215" fill="none" stroke="#3b82f6" stroke-width="4" class="flow-line opacity-20" />
+
+                    <!-- ================= PARTICLES (Invisible Paths used for Animation) ================= -->
+                    
+                    <!-- 1. Check-in Particles -->
+                    <circle id="p-checkin-1" class="particle text-amber-400" fill="currentColor" style="offset-path: path('M 180 380 L 320 380');" />
+                    <circle id="p-checkin-2" class="particle text-emerald-400" fill="currentColor" style="offset-path: path('M 400 350 L 400 215 L 480 215 C 550 215, 600 100, 650 100');" />
+
+                    <!-- 2. Multicast Video Particles -->
+                    <circle id="p-vid-red" class="particle text-red-500" r="7" fill="currentColor" style="offset-path: path('M 180 100 L 320 215 L 480 215 C 550 215, 600 100, 650 100');" />
+                    <circle id="p-vid-blue" class="particle text-blue-500" r="7" fill="currentColor" style="offset-path: path('M 180 100 L 320 215 L 480 215 L 650 215');" />
+                    <circle id="p-vid-purple" class="particle text-purple-500" r="7" fill="currentColor" style="offset-path: path('M 180 100 L 320 215 L 480 215 C 550 215, 600 330, 650 330');" />
+
+                    <!-- 3 & 4. Service / Bill Request Particles (Round Trip TV <-> Vella <-> Opera) -->
+                    <circle id="p-req-tv-vella" class="particle text-white" fill="currentColor" style="offset-path: path('M 650 100 C 600 100, 550 215, 480 215 L 400 215 L 400 350');" />
+                    <circle id="p-req-vella-opera" class="particle text-emerald-400" fill="currentColor" style="offset-path: path('M 320 400 L 180 400');" />
+                    <circle id="p-req-opera-vella" class="particle text-amber-400" fill="currentColor" style="offset-path: path('M 180 380 L 320 380');" />
+                    <circle id="p-req-vella-tv" class="particle text-emerald-400" fill="currentColor" style="offset-path: path('M 400 350 L 400 215 L 480 215 C 550 215, 600 100, 650 100');" />
+
+                    <!-- ================= NODES ================= -->
+                    <!-- Headend -->
+                    <g id="node-headend" class="node" transform="translate(40, 60)">
+                        <rect width="140" height="80" rx="12" fill="url(#grad-video)" class="shadow-lg" />
+                        <rect width="140" height="80" rx="12" fill="none" stroke="#60a5fa" stroke-width="1.5" />
+                        <text x="70" y="40" fill="white" font-weight="bold" text-anchor="middle" font-size="14">IPTV Headend</text>
+                        <text x="70" y="60" fill="#bfdbfe" font-size="11" text-anchor="middle">Stream Encoder</text>
+                    </g>
+
+                    <!-- Middleware -->
+                    <g id="node-vella" class="node" transform="translate(320, 350)">
+                        <rect width="160" height="90" rx="12" fill="url(#grad-vella)" class="shadow-lg" />
+                        <rect width="160" height="90" rx="12" fill="none" stroke="#34d399" stroke-width="1.5" />
+                        <text x="80" y="40" fill="white" font-weight="bold" text-anchor="middle" font-size="14">Vella Middleware</text>
+                        <text x="80" y="60" fill="#a7f3d0" font-size="11" text-anchor="middle">Business Logic API</text>
+                    </g>
+
+                    <!-- Switch -->
+                    <g id="node-switch" class="node" transform="translate(320, 180)">
+                        <rect width="160" height="70" rx="12" fill="#1e293b" />
+                        <rect width="160" height="70" rx="12" fill="none" stroke="#64748b" stroke-width="2" />
+                        <circle cx="80" cy="35" r="20" fill="#0f172a" />
+                        <path d="M 72 27 L 88 43 M 88 27 L 72 43" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+                        <text x="80" y="20" fill="white" font-weight="bold" text-anchor="middle" font-size="12">Core L3 Switch</text>
+                    </g>
+
+                    <!-- PMS -->
+                    <g id="node-opera" class="node" transform="translate(40, 350)">
+                        <rect width="140" height="80" rx="12" fill="#451a03" />
+                        <rect width="140" height="80" rx="12" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                        <text x="70" y="40" fill="white" font-weight="bold" text-anchor="middle" font-size="14">Opera PMS</text>
+                        <text x="70" y="60" fill="#fde68a" font-size="11" text-anchor="middle">Master Database</text>
+                    </g>
+
+                    <!-- TV Rooms -->
+                    <g transform="translate(650, 70)">
+                        <!-- TV 101 -->
+                        <g id="tv-101" class="node">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" stroke="#2dd4bf" stroke-width="1" />
+                            <text x="55" y="28" fill="white" font-size="13" font-weight="bold" text-anchor="middle">Phòng 101</text>
+                            <text id="txt-tv1" x="55" y="48" fill="#fca5a5" font-size="11" text-anchor="middle">Chưa bật</text>
+                        </g>
+                        <!-- TV 102 -->
+                        <g id="tv-102" class="node" transform="translate(0, 115)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" stroke="#2dd4bf" stroke-width="1" />
+                            <text x="55" y="28" fill="white" font-size="13" font-weight="bold" text-anchor="middle">Phòng 102</text>
+                            <text id="txt-tv2" x="55" y="48" fill="#93c5fd" font-size="11" text-anchor="middle">Chưa bật</text>
+                        </g>
+                        <!-- TV 103 -->
+                        <g id="tv-103" class="node" transform="translate(0, 230)">
+                            <rect width="110" height="60" rx="6" fill="#0f766e" stroke="#2dd4bf" stroke-width="1" />
+                            <text x="55" y="28" fill="white" font-size="13" font-weight="bold" text-anchor="middle">Phòng 103</text>
+                            <text id="txt-tv3" x="55" y="48" fill="#d8b4fe" font-size="11" text-anchor="middle">Chưa bật</text>
+                        </g>
+                    </g>
+                </svg>
+
+                <!-- Legend -->
+                <div class="absolute bottom-4 right-4 bg-slate-800/90 p-3 rounded-lg border border-slate-600 backdrop-blur-md text-[11px] text-slate-300">
+                    <div class="flex items-center gap-2 mb-1.5"><div class="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_5px_#fbbf24]"></div> Dữ liệu gốc từ PMS (FIAS)</div>
+                    <div class="flex items-center gap-2 mb-1.5"><div class="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_5px_#34d399]"></div> API Middleware xử lý</div>
+                    <div class="flex items-center gap-2 mb-1.5"><div class="w-3 h-3 rounded-full bg-white shadow-[0_0_5px_#fff]"></div> Request từ Client (TV)</div>
+                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-red-500 shadow-[0_0_5px_#ef4444]"></div> Luồng Video Multicast (Nặng)</div>
+                </div>
+            </div>
+
+            <!-- Description Sidebar (Col span 2 for wider text area) -->
+            <div class="lg:col-span-2 p-6 bg-slate-800 border-l border-slate-700 flex flex-col h-full overflow-hidden shadow-inner">
+                <div class="mb-4 pb-4 border-b border-slate-700">
+                    <div id="step-badge" class="inline-block px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wider mb-2"></div>
+                    <h3 id="step-title" class="text-xl font-bold text-white leading-tight">Chọn kịch bản...</h3>
+                </div>
+                
+                <div id="info-content" class="flex-1 overflow-y-auto info-scroll pr-3 space-y-5 text-sm text-slate-300 leading-relaxed pb-4">
+                    Chọn một nút phía trên để bắt đầu phân tích luồng.
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const steps = [
+    {
+        title: "Khách Check-in (Data Synchronization)",
+        shortTitle: "1. Khách Check-in",
+        badge: "Opera ➔ Vella ➔ Smart TV",
+        badgeClass: "bg-amber-500/20 text-amber-400 border border-amber-500/30",
+        activeNodes: ['node-opera', 'node-vella', 'tv-101'],
+        activePaths: ['path-opera-vella', 'path-vella-sw', 'path-sw-tv101'],
+        particles: [
+            { id: 'p-checkin-1', delay: '0s', class: 'particle-active-medium' }, 
+            { id: 'p-checkin-2', delay: '1s', class: 'particle-active-medium' }
+        ],
+        tvText: ["Xin chào Mr. An!", "Chưa bật", "Chưa bật"],
+        html: `
+            <div class="space-y-4">
+                <div class="p-3.5 bg-slate-900/60 rounded-lg border-l-4 border-amber-500 shadow-md">
+                    <strong class="text-amber-400 block mb-2 text-[13px] uppercase tracking-wide">1. Opera PMS "Bắn" Dữ Liệu</strong>
+                    <p class="mb-2">Khi lễ tân bấm Check-in, Opera đẩy một bản tin TCP/IP (chuẩn FIAS) chứa toàn bộ Data khách hàng sang Vella:</p>
+                    <pre class="bg-[#0f172a] p-2.5 rounded text-[11px] font-mono text-amber-200 overflow-x-auto border border-slate-700"><code>{
+  "Action": "GuestIn",
+  "RoomId": "101",
+  "GuestName": "NGUYEN VAN AN",
+  "Language": "vi-VN",
+  "VIPStatus": "VIP_GOLD"
+}</code></pre>
+                </div>
+                
+                <div class="p-3.5 bg-slate-900/60 rounded-lg border-l-4 border-emerald-500 shadow-md">
+                    <strong class="text-emerald-400 block mb-2 text-[13px] uppercase tracking-wide">2. Vella Middleware Xào Nấu</strong>
+                    <p class="mb-2">Vella nhận cục JSON trên, tra cứu Database thấy "À, phòng 101 là cái TV có MAC Address 00:1A...". Nó tiến hành:</p>
+                    <ul class="list-disc pl-5 space-y-1 text-emerald-100/80">
+                        <li>Tạo hồ sơ cá nhân hóa (đổi UI sang tiếng Việt).</li>
+                        <li>Đẩy một lệnh <strong>WebSocket</strong> xuống IP của TV để "đánh thức" hoặc nạp lại giao diện.</li>
+                    </ul>
+                </div>
+
+                <div class="p-3.5 bg-[#0f766e]/20 rounded-lg border-l-4 border-teal-400 shadow-md">
+                    <strong class="text-teal-400 block mb-1 text-[13px] uppercase tracking-wide">3. Hiển thị trên TV</strong>
+                    Màn hình phòng 101 lập tức sáng lên với dòng chữ <em class="text-white font-medium">"Kính chào quý khách Nguyễn Văn An"</em> cùng các menu dịch vụ được cá nhân hóa cho hạng Gold.
+                </div>
+            </div>
+        `
+    },
+    {
+        title: "Phân luồng Đa Kênh (Live TV Multicast)",
+        shortTitle: "2. Xem Truyền Hình",
+        badge: "Headend ➔ Switch ➔ Smart TV",
+        badgeClass: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+        activeNodes: ['node-headend', 'node-switch', 'tv-101', 'tv-102', 'tv-103'],
+        activePaths: ['path-headend-sw', 'path-sw-tv101', 'path-sw-tv102', 'path-sw-tv103'],
+        particles: [
+            { id: 'p-vid-red', delay: '0s', class: 'particle-active' },
+            { id: 'p-vid-blue', delay: '0.5s', class: 'particle-active' },
+            { id: 'p-vid-purple', delay: '1s', class: 'particle-active' }
+        ],
+        tvText: ["Đang xem VTV1", "Đang xem HBO", "Đang xem CNN"],
+        html: `
+            <div class="space-y-4">
+                <div class="p-3 bg-blue-900/20 rounded border border-blue-800/50 text-blue-100">
+                    <p class="mb-2"><strong class="text-blue-300">Tuyệt chiêu của IPTV:</strong> Việc truyền tải Video băng thông cao (HD/4K) <strong>tuyệt đối không đi qua Middleware</strong> để tránh sập server.</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="p-3 bg-slate-900/60 rounded-lg border-l-4 border-red-500 flex flex-col gap-1">
+                        <strong class="text-red-400">TV 101: Gửi lệnh "IGMP Join 239.1.1.1"</strong>
+                        <span class="text-xs text-slate-400">Switch Core cấu hình IGMP Snooping sẽ bóc tách luồng VTV1 (Hạt Đỏ) từ Headend và "bơm" chỉ định vào cáp mạng phòng 101.</span>
+                    </div>
+                    
+                    <div class="p-3 bg-slate-900/60 rounded-lg border-l-4 border-blue-500 flex flex-col gap-1">
+                        <strong class="text-blue-400">TV 102: Gửi lệnh "IGMP Join 239.1.1.2"</strong>
+                        <span class="text-xs text-slate-400">Tương tự, luồng phim HBO (Hạt Xanh) băng thông ~8Mbps được Switch đẩy thẳng vào phòng 102. Tivi 101 không hề bị ảnh hưởng.</span>
+                    </div>
+                    
+                    <div class="p-3 bg-slate-900/60 rounded-lg border-l-4 border-purple-500 flex flex-col gap-1">
+                        <strong class="text-purple-400">TV 103: Xem CNN (Hạt Tím)</strong>
+                        <span class="text-xs text-slate-400">Dù khách sạn có 1,000 phòng, mô hình mạng chia cắt lớp 2 này giúp mạng không bao giờ bị nghẽn (Broadcast Storm).</span>
+                    </div>
+                </div>
+            </div>
+        `
+    },
+    {
+        title: "Khách gọi món (Room Service Request)",
+        shortTitle: "3. Đặt Dịch Vụ",
+        badge: "TV ➔ Middleware ➔ PMS",
+        badgeClass: "bg-white/10 text-white border border-white/30",
+        activeNodes: ['tv-101', 'node-vella', 'node-opera'],
+        activePaths: ['path-sw-tv101', 'path-vella-sw', 'path-vella-opera', 'path-opera-vella'],
+        particles: [
+            { id: 'p-req-tv-vella', delay: '0s', class: 'particle-active-fast' },
+            { id: 'p-req-vella-opera', delay: '0.8s', class: 'particle-active-fast' },
+            { id: 'p-req-opera-vella', delay: '1.6s', class: 'particle-active-fast' },
+            { id: 'p-req-vella-tv', delay: '2.4s', class: 'particle-active-fast' }
+        ],
+        tvText: ["Order 1 Burger...", "Đang xem HBO", "Đang xem CNN"],
+        html: `
+            <div class="space-y-4">
+                <p class="text-slate-300">Đây là quá trình "Khứ hồi" (Round-trip) giữa 3 hệ thống khi khách tương tác.</p>
+                
+                <div class="space-y-2 relative before:absolute before:inset-0 before:ml-2.5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-600 before:to-transparent">
+                    
+                    <!-- Step 1 -->
+                    <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                        <div class="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 bg-slate-900/60 rounded border border-slate-700 ml-6 md:ml-0 md:mr-6">
+                            <strong class="text-white text-xs block mb-1">1. Hạt Trắng (TV -> Vella)</strong>
+                            <p class="text-[11px] text-slate-400">TV gửi HTTP POST <code class="text-white">{"item":"Burger","price":15}</code> lên Middleware.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="relative flex items-center justify-between md:justify-normal group is-active">
+                        <div class="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 bg-slate-900/60 rounded border border-slate-700 ml-6 md:ml-0 md:ml-auto md:mr-0">
+                            <strong class="text-emerald-400 text-xs block mb-1">2. Hạt Xanh (Vella -> PMS)</strong>
+                            <p class="text-[11px] text-slate-400">Vella dịch sang chuẩn PMS, gửi lệnh Charge nợ $15 vào hóa đơn P.101.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                        <div class="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 bg-slate-900/60 rounded border border-slate-700 ml-6 md:ml-0 md:mr-6">
+                            <strong class="text-amber-400 text-xs block mb-1">3. Hạt Vàng (PMS -> Vella)</strong>
+                            <p class="text-[11px] text-slate-400">Opera xác nhận thành công (Status: OK).</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="relative flex items-center justify-between md:justify-normal group is-active">
+                        <div class="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 bg-slate-900/60 rounded border border-slate-700 ml-6 md:ml-0 md:ml-auto md:mr-0">
+                            <strong class="text-teal-400 text-xs block mb-1">4. Hạt Xanh (Vella -> TV)</strong>
+                            <p class="text-[11px] text-slate-400">Vella báo bếp làm món, đồng thời trả JSON Success về TV để hiện popup "Order Success".</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `
+    },
+    {
+        title: "Tra cứu Hoá đơn (View Bill Folio)",
+        shortTitle: "4. Xem Bill",
+        badge: "TV ➔ Vella ➔ Opera Data",
+        badgeClass: "bg-teal-500/20 text-teal-400 border border-teal-500/30",
+        activeNodes: ['tv-101', 'node-vella', 'node-opera'],
+        activePaths: ['path-sw-tv101', 'path-vella-sw', 'path-vella-opera', 'path-opera-vella'],
+        particles: [
+            { id: 'p-req-tv-vella', delay: '0s', class: 'particle-active-fast' },
+            { id: 'p-req-vella-opera', delay: '0.8s', class: 'particle-active-fast' },
+            { id: 'p-req-opera-vella', delay: '1.6s', class: 'particle-active-fast' },
+            { id: 'p-req-vella-tv', delay: '2.4s', class: 'particle-active-fast' }
+        ],
+        tvText: ["Đang tra cứu Bill...", "Đang xem HBO", "Đang xem CNN"],
+        html: `
+            <div class="space-y-4">
+                <div class="p-3.5 bg-slate-900/60 rounded-lg border-l-4 border-white shadow-md">
+                    <strong class="text-white block mb-1 text-[13px]">1. TV Gọi API</strong>
+                    Khách dùng remote bấm "View Bill". TV gửi Request: <br>
+                    <code class="text-xs text-emerald-300">GET /api/v1/guest/folio?room=101</code>
+                </div>
+
+                <div class="p-3.5 bg-slate-900/60 rounded-lg border-l-4 border-amber-500 shadow-md">
+                    <strong class="text-amber-400 block mb-2 text-[13px]">2. Vella Query và Opera Trả Data (Hạt Vàng)</strong>
+                    <p class="mb-2 text-xs text-slate-300">Opera sở hữu cục Data gốc này và ném lại cho Vella một chuỗi dữ liệu thô:</p>
+                    <pre class="bg-[#0f172a] p-2.5 rounded text-[11px] font-mono text-amber-200 overflow-x-auto border border-slate-700"><code>{
+  "Folio": "101",
+  "TotalBalance": 165.00,
+  "Currency": "USD",
+  "Items": [
+    {"Date": "2023-10-25", "Code": "R_SRV", "Desc": "In-room Burger", "Amt": 15.00},
+    {"Date": "2023-10-25", "Code": "SPA", "Desc": "Foot Massage", "Amt": 150.00}
+  ]
+}</code></pre>
+                </div>
+
+                <div class="p-3.5 bg-[#0f766e]/20 rounded-lg border-l-4 border-teal-400 shadow-md">
+                    <strong class="text-teal-400 block mb-1 text-[13px]">3. Vella Render UI (Hạt Xanh về TV)</strong>
+                    Vella không quăng nguyên cục JSON xấu xí này lên TV. Nó "Format" lại thành các Component UI (Next.js/React) đẹp mắt, có logo khách sạn, có hiệu ứng cuộn, sau đó mới trả về để TV vẽ lên màn hình cho khách xem.
+                </div>
+            </div>
+        `
+    }
+];
+
+function renderStep(index) {
+    const step = steps[index];
+    const buttons = document.getElementById('btn-container').children;
+
+    // Reset Buttons
+    Array.from(buttons).forEach((btn, i) => {
+        btn.className = `px-4 py-2 text-xs font-semibold rounded-lg transition-all border ${
+            i === index 
+            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-lg shadow-emerald-500/20' 
+            : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200'
+        }`;
+    });
+
+    // Set Text Content
+    document.getElementById('step-title').innerText = step.title;
+    document.getElementById('step-badge').innerText = step.badge;
+    document.getElementById('step-badge').className = `inline-block px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wider mb-2 ${step.badgeClass}`;
+    document.getElementById('info-content').innerHTML = step.html;
+
+    // Update TV labels dynamically
+    document.getElementById('txt-tv1').textContent = step.tvText[0];
+    document.getElementById('txt-tv2').textContent = step.tvText[1];
+    document.getElementById('txt-tv3').textContent = step.tvText[2];
+    
+    if (index === 0 || index === 2 || index === 3) {
+        document.getElementById('txt-tv1').classList.add('animate-pulse');
+    } else {
+        document.getElementById('txt-tv1').classList.remove('animate-pulse');
+    }
+
+    // Reset Visual Elements
+    document.querySelectorAll('.node').forEach(n => { n.style.opacity = '0.3'; n.style.filter = 'grayscale(0.8)'; });
+    document.querySelectorAll('.flow-line').forEach(p => p.style.opacity = '0.05');
+    document.querySelectorAll('.particle').forEach(p => { 
+        p.className.baseVal = p.className.baseVal.replace(/particle-active[^\s]*/g, '').trim();
+        p.style.opacity = '0'; 
+    });
+
+    // Activate Current Elements
+    step.activeNodes.forEach(id => { 
+        const el = document.getElementById(id);
+        if(el) { el.style.opacity = '1'; el.style.filter = 'grayscale(0)'; }
+    });
+    
+    step.activePaths.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.style.opacity = '0.6';
+    });
+    
+    // Start Particles with proper animation class
+    step.particles.forEach(pData => {
+        const p = document.getElementById(pData.id);
+        if(p) {
+            setTimeout(() => {
+                p.classList.add(pData.class);
+            }, parseFloat(pData.delay) * 1000);
+        }
+    });
+}
+
+function init() {
+    const container = document.getElementById('btn-container');
+    steps.forEach((s, i) => {
+        const b = document.createElement('button');
+        b.innerText = s.shortTitle;
+        b.onclick = () => renderStep(i);
+        container.appendChild(b);
+    });
+    renderStep(3); // Khởi chạy mặc định ở Kịch bản 4 (Xem Bill)
+}
+
+// Initialize on Document Load
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
