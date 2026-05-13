@@ -1,0 +1,97 @@
+# Build backend + frontend Docker images và push lên GHCR (Portainer pull về).
+# Branch: main → tag latest (+ sha). Tag git v*.*.* → tag semver trên GHCR.
+name: Build and Push GHCR
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  CONTEXT: ./platform
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd0eb6360e40f65dbf2ad0587bd58d # v3.11.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7127 # v3.3.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta (backend)
+        id: meta
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d558b2a567417941f6050 # v5.7.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/vella-iptv-backend
+          tags: |
+            type=sha,format=short,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@1dc73863535b631f98b2376be3c9b63d6b037a2e # v6.17.0
+        with:
+          context: ${{ env.CONTEXT }}
+          file: ${{ env.CONTEXT }}/backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd0eb6360e40f65dbf2ad0587bd58d # v3.11.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7127 # v3.3.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta (frontend)
+        id: meta
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d558b2a567417941f6050 # v5.7.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/vella-iptv-frontend
+          tags: |
+            type=sha,format=short,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      # URL API được bake vào bundle Vite — đặt GitHub Repo variable VITE_API_URL (ví dụ http://192.168.1.116:8000)
+      - name: Build and push frontend
+        uses: docker/build-push-action@1dc73863535b631f98b2376be3c9b63d6b037a2e # v6.17.0
+        with:
+          context: ${{ env.CONTEXT }}
+          file: ${{ env.CONTEXT }}/frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL || 'http://127.0.0.1:8000' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

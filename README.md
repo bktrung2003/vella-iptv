@@ -16,16 +16,14 @@ Control plane (FastAPI + dashboard) và tài nguyên UI/research cho IPTV khách
 2. `copy platform\frontend\.env.example platform\frontend\.env` nếu build frontend local.
 3. Không commit `platform/.env` — đã nằm trong `.gitignore`.
 
-## Portainer (Ubuntu, ví dụ 192.168.1.116)
+## CI → GHCR → Portainer
 
-1. Trên host: tạo mạng Traefik nếu dùng stack production có `traefik-public` external:
+1. Push `main` (hoặc tag `v*`) để chạy workflow **Build and Push GHCR** (file [`.github/workflows/build-push-ghcr.yml`](.github/workflows/build-push-ghcr.yml)).
+2. Trên GitHub repo → **Settings → Variables**: đặt `VITE_API_URL` (ví dụ `http://192.168.1.116:8000`) rồi chạy lại workflow để frontend embed đúng API.
+3. Portainer: dán compose [`platform/compose.portainer.ghcr.yml`](platform/compose.portainer.ghcr.yml), thêm biến môi trường, **Pull and redeploy** sau mỗi build.
 
-   `docker network create traefik-public`
+**Playbook đầy đủ:** [docs/deploy-portainer.md](docs/deploy-portainer.md) (cùng luồng với playbook ITBM trong `.claude/knowledge`).
 
-2. Trong Portainer: **Stacks → Add stack → Repository** (hoặc dán compose), trỏ repo này và file compose phù hợp (xem `platform/deployment.md`).
+### Traefik + HTTPS (tùy chọn, production public)
 
-3. Thêm biến môi trường trong Portainer (hoặc file env) khớp với `.env.example`; đổi `DOMAIN`, `SECRET_KEY`, mật khẩu DB, `FRONTEND_HOST` / `BACKEND_CORS_ORIGINS` theo URL thật (IP hoặc DNS nội bộ).
-
-4. Build: dùng **GitHub Actions** build & push image lên registry, rồi trong compose thay `build:` bằng `image:` — hoặc để Portainer build từ Git (Webhooks / polling).
-
-Chi tiết HTTPS/Traefik: [platform/deployment.md](platform/deployment.md).
+Tạo mạng `traefik-public`, xem [platform/deployment.md](platform/deployment.md) và `compose.traefik.yml`.
