@@ -1,5 +1,8 @@
 # Stack Portainer: kéo image từ GHCR (không build trên server).
 #
+# Đổi IP / mật khẩu: sửa TRỰC TIẾP file này (không dùng platform/.env cho stack Portainer).
+# Sau khi đổi IP: đặt VITE_API_URL trên GitHub Actions Variables + re-run workflow — xem README.md mục "Chỉnh cho khớp".
+#
 # ⚠️ FILE NÀY CHỨA MẬT KHẨU MẶC ĐỊNH LAB — repo public → ai cũng thấy.
 #    Chỉ để chạy nhanh; đổi POSTGRES_*, SECRET_KEY, FIRST_SUPERUSER_* trước production.
 #
