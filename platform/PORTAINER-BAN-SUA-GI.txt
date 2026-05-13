@@ -1,6 +1,11 @@
 ================================================================================
 PORTAINER — BẠN CHỈ LÀM ĐÚNG 2 CHỖ (đọc từ trên xuống)
 ================================================================================
+QUAN TRỌNG: Stack phải tạo bằng Portainer (Stacks → Add stack).
+Đừng tạo cùng app bằng `docker compose up` trên SSH trước đó — sẽ bị
+"created outside Portainer" và khó sửa. Xem mục LỖI bên dưới nếu đã dính.
+
+================================================================================
 
 (1) Web editor của Stack
     → Dán NGUYÊN FILE compose (không sửa nếu chưa rành):
@@ -35,6 +40,30 @@ Ví dụ: http://192.168.1.116:7000
 
 Rồi: Actions → workflow "Build and Push GHCR" → Re-run workflow
 Portainer: stack → Pull and redeploy
+
+================================================================================
+LỖI: "This stack was created outside of Portainer. Control is limited."
+================================================================================
+Nghĩa là: các container này đã được tạo bằng CÁCH KHÁC (ví dụ bạn chạy
+`docker compose up` trực tiếp trên SSH, hoặc script), KHÔNG phải tạo từ
+màn Portainer → Stacks → Add stack. Portainer chỉ "nhìn thấy" stack đó
+nên không cho sửa compose đầy đủ như stack nội bộ.
+
+Cách xử lý (chọn một — làm khi chấp nhận tắt app vài phút):
+
+  A) Trên máy Ubuntu (SSH), vào đúng thư mục đã từng `docker compose up` rồi:
+       docker compose down
+     (hoặc: docker compose ls  →  docker compose -p <tên_project> down)
+
+  B) Hoặc trong Portainer → Containers: stop + remove từng container thuộc
+     project đó (db, backend, frontend, …) + xóa network compose của nó
+     nếu còn.
+
+Sau khi dọn sạch: vào Portainer → Stacks → Add stack → ĐẶT TÊN MỚI
+(nếu cần) → dán compose + env NHƯ HƯỚNG DẪN Ở TRÊN → Deploy.
+Từ giờ CHỈ chỉnh stack qua Portainer, đừng chạy lại `docker compose up`
+cùng project trên SSH (hoặc nếu có chạy thì dùng đúng file Portainer đã
+xuất ra để đồng bộ).
 
 ================================================================================
 VÀO WEB SAU KHI CHẠY XONG
